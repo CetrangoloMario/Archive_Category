@@ -1,0 +1,2 @@
+pipbotbuilder-integration-aiohttp>=4.14.0
+botbuilder-dialogs>=4.14.0
