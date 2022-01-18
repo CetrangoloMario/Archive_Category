@@ -62,6 +62,7 @@ class MainDialog(ComponentDialog):
                  self.loop_step]
             )
         )
+        
         self.add_dialog(registration_dialog)
 
         
