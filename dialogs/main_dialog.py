@@ -176,7 +176,7 @@ class MainDialog(ComponentDialog):
         title = "Benvenuto in ArchiveCategory"
         subtitle = "Per iniziare ad utilizzare il bot effettuare il login"
         #image = CardImage(url="https")
-        card = HeroCard(title=title, subtitle=subtitle, images=[image])
+        card = HeroCard(title=title, subtitle=subtitle,images=None)
         activity = MessageFactory.attachment(CardFactory.hero_card(card))
         return activity
     
