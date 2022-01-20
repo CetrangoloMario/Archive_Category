@@ -50,8 +50,8 @@ class MainDialog(ComponentDialog):
             )
         )
 
-        self.add_dialog(TextPrompt(TextPrompt.__name__))
-        self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__))
+        self.add_dialog(TextPrompt(TextPrompt.__name__)) #chiede all'utente l'input
+        self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__)) #Richiede a un utente di confermare qualcosa con una risposta sì/no.
         self.add_dialog(
             WaterfallDialog(
                 "WFDialog", 
@@ -62,7 +62,6 @@ class MainDialog(ComponentDialog):
                  self.loop_step]
             )
         )
-        
         self.add_dialog(registration_dialog)
 
         
@@ -115,7 +114,7 @@ class MainDialog(ComponentDialog):
     async def continue_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         return await step_context.begin_dialog("WFDialog")
         
-
+    
     async def menu_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         
 
@@ -168,9 +167,6 @@ class MainDialog(ComponentDialog):
         return await step_context.cancel_all_dialogs()
 
     
-
-    
-
         
     def create_welcome_card(self):
         title = "Benvenuto in ArchiveCategory"
