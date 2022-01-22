@@ -1,7 +1,5 @@
 import pyodbc
 from bean import User
-from bean import BookInfo
-from bean import Book, Category
 from typing import List
 
 #dati di configurazione per l'utilizzo del database SQL

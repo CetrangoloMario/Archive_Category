@@ -16,7 +16,7 @@ from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes, ConversationReference
 
 from config import DefaultConfig
-from dialogs import MainDialog, FindBookDialog
+from dialogs import MainDialog
 from adapter_with_error_handler import AdapterWithErrorHandler
 
 from pip._internal import req

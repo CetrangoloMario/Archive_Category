@@ -24,12 +24,12 @@ class RegistrationDialog(CancelAndHelpDialog):
         super(RegistrationDialog, self).__init__(dialog_id or RegistrationDialog.__name__)
 
         
-        self.add_dialog(TextPrompt(TextPrompt.__name__, RegistrationDialog.validate))
+        #self.add_dialog(TextPrompt(TextPrompt.__name__, RegistrationDialog.validate))
+        self.add_dialog(TextPrompt(TextPrompt.__name__))
         self.add_dialog(
             WaterfallDialog(
                 "WFDialog", [self.select_first,
                     self.select_second,
-                    self.select_third,
                     self.register]
             )
         )
