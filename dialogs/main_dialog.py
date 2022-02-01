@@ -85,31 +85,31 @@ class MainDialog(ComponentDialog):
 
     async def prompt_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         welcome_card = self.create_welcome_card()
+        print("welcome card")
         await step_context.context.send_activity(welcome_card)
         return await step_context.begin_dialog(OAuthPrompt.__name__)
         
 
     async def login_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         step_context.values["skip"] = False
-
         #richieste all'utente username wilcard
         if step_context.result:
             iduser=step_context.context.activity.from_property.id
-            
+            await step_context.context.send_activity("Hai inserito il codice!!! controllo se sei registrato!!!!")
             
             if not DatabaseManager.user_is_registered(iduser):
                 await step_context.context.send_activity(MessageFactory.text('''Non sei registrato'''))
                 return await step_context.begin_dialog(self.registration_dialog_id) 
             else:
-                
                 #nome resource group (nomr archivio ) preleva da db
-
                 await step_context.context.send_activity(MessageFactory.text('''Login effetuato'''))
                 return await step_context.next([])
         else:
             await step_context.context.send_activity("Il login non è andato a buon fine. Riprova.")
             return await step_context.end_dialog()
     
+   
+
 
     async def continue_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         return await step_context.begin_dialog("WFDialog")

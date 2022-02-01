@@ -25,10 +25,11 @@ class RegistrationDialog(CancelAndHelpDialog):
 
         
         #self.add_dialog(TextPrompt(TextPrompt.__name__, RegistrationDialog.validate))
-        self.add_dialog(TextPrompt(TextPrompt.__name__))
+        self.add_dialog(TextPrompt(TextPrompt.__name__)) #chiedere l'input all'utente 
         self.add_dialog(
             WaterfallDialog(
-                "WFDialog", [self.select_first,
+                "WFDialog", [
+                    self.select_first,
                     self.select_second,
                     self.register]
             )
@@ -38,14 +39,18 @@ class RegistrationDialog(CancelAndHelpDialog):
 
 
     async def select_first(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        
-        #form nome 
+        await step_context.context.send_activity("Iniziamo la registrazione!")
+        #ritorna al Dialog TextPrompt riga 28 
         return await step_context.prompt(
-            PromptOptions(prompt=MessageFactory.text("Inserisci nome utente che sarà usato per i tuoi accessi futuri"))
-        )
+               TextPrompt.__name__,
+                PromptOptions(
+                    prompt=MessageFactory.text("Inserisci il nome dell'archivio ? ")
+                ),
+            )
 
     async def select_second(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-
+        print("secondo step registrazione")
+        await step_context.context.send_activity("il nome archivio inserito: "+step_context.result)
         step_context.values["nome_utente"] = step_context.result   
 
         if not self._validate_nome_utente(step_context.result):

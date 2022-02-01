@@ -11,7 +11,7 @@ class DefaultConfig:
     """ Bot Configuration """
 
     PORT = 3978
-    APP_ID = os.environ.get("MicrosoftAppId", "77956cb5-e08b-42f7-b137-7625e2763199")
-    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "dbc5c99f-bb35-41ac-9723-fcf02a476b51")
-    CONNECTION_NAME = os.environ.get("ConnectionName", "ManlioConnection")
+    APP_ID = os.environ.get("MicrosoftAppId", "")
+    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "")
+    CONNECTION_NAME = os.environ.get("ConnectionName", "")
     
