@@ -15,11 +15,15 @@ from botbuilder.dialogs.prompts.choice_prompt import ChoicePrompt
 from botbuilder.dialogs.choices import Choice
 from botbuilder.dialogs.choices.list_style import ListStyle
 from databaseManager import DatabaseManager
+import os, random
+from azure.identity import AzureCliCredential
+from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.storage import StorageManagementClient
 
 
 
 
-class RegistrationDialog(CancelAndHelpDialog):
+class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog 
     def __init__(self, dialog_id: str = None):
         super(RegistrationDialog, self).__init__(dialog_id or RegistrationDialog.__name__)
 
@@ -51,6 +55,11 @@ class RegistrationDialog(CancelAndHelpDialog):
     async def select_second(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         print("secondo step registrazione")
         await step_context.context.send_activity("il nome archivio inserito: "+step_context.result)
+        if(self.provision_blob(step_context.result)):
+            print("account creato !!!")
+        else:
+            print("account non creato")
+
         step_context.values["nome_utente"] = step_context.result   
 
         if not self._validate_nome_utente(step_context.result):
@@ -109,6 +118,53 @@ class RegistrationDialog(CancelAndHelpDialog):
             return True
         else :
             False
+
+    @staticmethod #return True account archiviazione creato, altrimenti false
+    def provision_blob(nomeArchivio: str) -> Boolean:
+        print("provisoni blov")
+        # Acquire a credential object using CLI-based authentication.
+        credential = AzureCliCredential()
+        # Retrieve subscription ID from environment variable.
+        print(os.environ)
+        subscription_id = os.environ["AZURE_SUBSCRIPTION_ID"]  #settare azure-subscription-id come variabile d'ambiente
+        # Obtain the management object for resources.
+        resource_client = ResourceManagementClient(credential, subscription_id)
+        RESOURCE_GROUP_NAME = "myresourcegroup"
+        LOCATION = "westeurope"
+
+        #Provision the storage account, starting with a management object.
+        # The name must be 3-24 lower case letters and numbers only.
+        storage_client = StorageManagementClient(credential, subscription_id)
+        STORAGE_ACCOUNT_NAME = nomeArchivio+f"{random.randint(1,100000):05}"
+
+        availability_result = storage_client.storage_accounts.check_name_availability(
+            { "name": STORAGE_ACCOUNT_NAME }
+        )
+
+        if not availability_result.name_available:
+            print(f"Storage name {STORAGE_ACCOUNT_NAME} is already in use. Try another name.")
+            return False
+        
+        #The name is available, so provision the account
+        poller = storage_client.storage_accounts.begin_create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME,
+            {
+                "location" : LOCATION,
+                "kind": "StorageV2",
+                "sku": {"name": "Standard_LRS"}
+            }
+        )
+
+        account_result = poller.result()
+        print(f"Provisioned storage account {account_result.name}")
+
+        #Retrieve the account's primary access key and generate a connection string.
+        keys = storage_client.storage_accounts.list_keys(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME)
+        conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={keys.keys[0].value}"
+        print(f"Connection string: {conn_string}")
+
+        return True
+
+
 
   
         

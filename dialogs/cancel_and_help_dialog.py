@@ -9,11 +9,17 @@ from botbuilder.dialogs import (
 )
 from botbuilder.schema import ActivityTypes, InputHints
 from botbuilder.core import MessageFactory
+from botbuilder.core import BotFrameworkAdapter
+from config import DefaultConfig
+
+CONFIG = DefaultConfig()
 
 
 class CancelAndHelpDialog(ComponentDialog):
     def __init__(self, dialog_id: str):
         super(CancelAndHelpDialog, self).__init__(dialog_id)
+        self.connection_name = CONFIG.CONNECTION_NAME
+
 
     async def on_continue_dialog(self, inner_dc: DialogContext) -> DialogTurnResult:
         result = await self.interrupt(inner_dc)
@@ -42,6 +48,12 @@ class CancelAndHelpDialog(ComponentDialog):
 
             if text.lower() in ("cancel", "quit"):
                 await inner_dc.context.send_activity(cancel_message)
+                return await inner_dc.cancel_all_dialogs()
+            
+            if text == "logout":
+                bot_adapter: BotFrameworkAdapter = inner_dc.context.adapter
+                await bot_adapter.sign_out_user(inner_dc.context, self.connection_name)
+                await inner_dc.context.send_activity("You have been signed out.")
                 return await inner_dc.cancel_all_dialogs()
 
         return None

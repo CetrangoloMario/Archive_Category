@@ -95,10 +95,12 @@ class MainDialog(ComponentDialog):
         #richieste all'utente username wilcard
         if step_context.result:
             iduser=step_context.context.activity.from_property.id
+            print("iduser: ",iduser)
             await step_context.context.send_activity("Hai inserito il codice!!! controllo se sei registrato!!!!")
             
             if not DatabaseManager.user_is_registered(iduser):
                 await step_context.context.send_activity(MessageFactory.text('''Non sei registrato'''))
+
                 return await step_context.begin_dialog(self.registration_dialog_id) 
             else:
                 #nome resource group (nomr archivio ) preleva da db

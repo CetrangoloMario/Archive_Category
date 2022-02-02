@@ -7,4 +7,4 @@ from .registration_dialog import RegistrationDialog
 
 
 
-__all__ = [ "CancelAndHelpDialog", "MainDialog", "RegistrationDialog"]
+__all__ = [ "CancelAndHelpDialog", "MainDialog", "RegistrationDialog",]
