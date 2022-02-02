@@ -1,8 +1,12 @@
 from contextlib import nullcontext
+from tkinter import dialog
 from xmlrpc.client import Boolean
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
 from botbuilder.schema import ActivityTypes, InputHints
 from botbuilder.core import CardFactory, MessageFactory
+from bean import archivio
+
+from bean.archivio import Archivio
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.schema._models_py3 import Attachment, CardAction, HeroCard
 from botbuilder.schema._connector_client_enums import ActionTypes
@@ -19,6 +23,10 @@ import os, random
 from azure.identity import AzureCliCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.resource import ResourceManagementClient
+from azure.identity import AzureCliCredential
+
+from bean import User
 
 
 
@@ -52,85 +60,67 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
                 ),
             )
 
+
     async def select_second(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        print("secondo step registrazione")
+        #print("secondo step registrazione")
+        step_context.values["archivio"] = step_context.result
+        iduser=step_context.context.activity.from_property.id
+
         await step_context.context.send_activity("il nome archivio inserito: "+step_context.result)
-        if(self.provision_blob(step_context.result)):
-            print("account creato !!!")
-        else:
-            print("account non creato")
-
-        step_context.values["nome_utente"] = step_context.result   
-
-        if not self._validate_nome_utente(step_context.result):
-            step_context.values["nome_utente"]==None
-            return await step_context.begin_dialog["WFDialog"]
-
-        #form email 
-        message_text = ("Inserisci email che sarà usato per i tuoi accessi futuri")
-        message = MessageFactory.text(message_text, message_text, InputHints.ignoring_input)
-        await step_context.context.send_activity(message)
-
-        step_context.values["email"]=step_context.result
         
+        if self._validate_resource_group(archivio):
+            arc=self.provision_blob(step_context.result)
+            if arc==None:
+                print("account creato !!!")
+            else:
+                print("account non creato")
+        else:
+            return await step_context.begin_dialog("WFDialog")
 
-        if not self._validate_email(step_context.result):
-            step_context.values["email"]==None
-            return await step_context.reprompt_dialog#dubbio reprompt riesegue il dialogo o solo questo passo!! non si capisce si deve eseguire
-
+        listarchive=list()
+        listarchive.append(arc)
+        #query inserimento archivio
+        utente=User(iduser,archivio,listarchive)
+        step_context.values["utente"] = utente
         
 
 
     
     async def register(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         
-        nome_utente=step_context.values["nome_utente"]
-        email=step_context.values["email"]
-        
-
-        message_text = ("Nome utente inserito è: {}",nome_utente)
-        message = MessageFactory.text(message_text, message_text, InputHints.ignoring_input)
-        await step_context.context.send_activity(message)
-
-        DatabaseManager.add_user(nome_utente, email)
-
-        #chiamare azure function per la creazione delle risorse (realizzare un dialog nel caso se servono parametri di configurazione)
+        utente= step_context.values["utente"]
+        #query creazione utente
 
         message_text = ("Sei registrato.")
         message = MessageFactory.text(message_text, message_text, InputHints.ignoring_input)
         await step_context.context.send_activity(message)
         return await step_context.end_dialog()
 
-    @staticmethod #controlla se il nome è già presente
-    async def _validate_nome_utente(nome_utente: str) -> Boolean:
-        utente= DatabaseManager.getUser(nome_utente)
-        if utente ==None:
-            return True
-        else :
-            False
 
+   
 
-
-    @staticmethod #controllo email formato /pensare di testare email prima di effettuare la registrazione inviando otp subito.
-    async def _validate_email(email: str) -> Boolean:
-        reg="(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/"
-        if re.match(reg,email) :
-            return True
-        else :
-            False
 
     @staticmethod #return True account archiviazione creato, altrimenti false
-    def provision_blob(nomeArchivio: str) -> Boolean:
-        print("provisoni blov")
+    def provision_blob(nomeArchivio: str):
+        #print("provisoni blov")
         # Acquire a credential object using CLI-based authentication.
         credential = AzureCliCredential()
         # Retrieve subscription ID from environment variable.
-        print(os.environ)
+        
         subscription_id = os.environ["AZURE_SUBSCRIPTION_ID"]  #settare azure-subscription-id come variabile d'ambiente
         # Obtain the management object for resources.
         resource_client = ResourceManagementClient(credential, subscription_id)
-        RESOURCE_GROUP_NAME = "myresourcegroup"
+        
+        RESOURCE_GROUP_NAME = nomeArchivio
+        availability_result = resource_client
         LOCATION = "westeurope"
+        
+        rg_result = resource_client.resource_groups.create_or_update(
+            nomeArchivio,
+            {
+            "location": "westeurope"
+            }
+        )
 
         #Provision the storage account, starting with a management object.
         # The name must be 3-24 lower case letters and numbers only.
@@ -155,14 +145,33 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         )
 
         account_result = poller.result()
-        print(f"Provisioned storage account {account_result.name}")
+        #print(f"Provisioned storage account {account_result.name}")
 
         #Retrieve the account's primary access key and generate a connection string.
         keys = storage_client.storage_accounts.list_keys(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME)
         conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={keys.keys[0].value}"
-        print(f"Connection string: {conn_string}")
+        #print(f"Connection string: {conn_string}")
 
-        return True
+        
+        return Archivio(STORAGE_ACCOUNT_NAME,keys.keys[0].value) 
+
+
+    @staticmethod #controlla se il nome è già presente
+    async def _validate_nome_utente(nome_utente: str) -> Boolean:
+        utente= DatabaseManager.getUser(nome_utente)
+        if utente ==None:
+            return True
+        else :
+            False
+    
+    @staticmethod #controlla se il nome è già presente
+    async def _validate_resource_group(nome: str) -> Boolean:
+        utente= DatabaseManager.aviability_rg(nome)
+        if utente ==None:
+            return True
+        else :
+            False
+
 
 
 

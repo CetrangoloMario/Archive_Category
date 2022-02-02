@@ -22,5 +22,18 @@ class DatabaseManager:
                     register=True
                     row = cursor.fetchone() 
         return register  
+
+
+    @staticmethod
+    def aviability_rg(nome: str):
+        register=False
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT nome FROM Person where nome=?",nome)
+                row = cursor.fetchone()
+                while row:
+                    register=True
+                    row = cursor.fetchone() 
+        return register  
     
 

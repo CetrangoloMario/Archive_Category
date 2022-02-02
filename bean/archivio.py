@@ -1,5 +1,9 @@
 class Archivio:#si aggingono mano mano i tag .... tipo di compressione criptazione scelta.
-    def __init__(self, utente:str =None, nome:str = None):
-        self.name_user=utente
-        self.nome=nome
+
+    def __init__(self, storage_account:str =None, account_key:str = None):
+        self.storage_name=storage_account
+        self.key_storage=account_key
+
+
+    
         
