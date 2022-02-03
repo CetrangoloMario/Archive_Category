@@ -13,7 +13,6 @@ from botbuilder.dialogs.prompts import TextPrompt, PromptOptions, ChoicePrompt
 from botbuilder.core import MessageFactory, TurnContext, CardFactory, UserState
 from botbuilder.schema import Attachment, InputHints, SuggestedActions
 from botbuilder.dialogs.choices import Choice
-from bean import  User
 from botbuilder.dialogs.prompts.oauth_prompt_settings import OAuthPromptSettings
 from botbuilder.dialogs.prompts.oauth_prompt import OAuthPrompt
 from botbuilder.dialogs.prompts.confirm_prompt import ConfirmPrompt
@@ -22,13 +21,14 @@ from .registration_dialog import RegistrationDialog
 from databaseManager import DatabaseManager
 from botbuilder.schema._connector_client_enums import ActivityTypes
 from botbuilder.dialogs.dialog import Dialog
-
+from botbuilder.core import BotFrameworkAdapter
+from dialogs.carica_file_dialog import CaricaFileDialog
 import os
 import json
 from typing import Dict
 
 registration_dialog=RegistrationDialog()
-
+carica_file_dialog = CaricaFileDialog()
 
 class MainDialog(ComponentDialog):
     
@@ -36,6 +36,7 @@ class MainDialog(ComponentDialog):
         super(MainDialog, self).__init__(MainDialog.__name__)
         self.connection_name=connection_name
         self.registration_dialog_id=registration_dialog.id
+        self.carica_file_dialog = carica_file_dialog.id
       
     
         self.add_dialog(
@@ -52,7 +53,7 @@ class MainDialog(ComponentDialog):
 
         self.add_dialog(TextPrompt(TextPrompt.__name__)) #chiede all'utente l'input
         self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__)) #Richiede a un utente di confermare qualcosa con una risposta sì/no.
-        """self.add_dialog(
+        self.add_dialog(
             WaterfallDialog(
                 "WFDialog", 
                 [
@@ -61,10 +62,10 @@ class MainDialog(ComponentDialog):
                  self.final_step, 
                  self.loop_step]
             )
-        )"""
+        )
         self.add_dialog(registration_dialog)
 
-        
+        self.add_dialog(carica_file_dialog)
 
         self.add_dialog(
             WaterfallDialog(
@@ -117,7 +118,7 @@ class MainDialog(ComponentDialog):
         
     
     async def menu_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        
+        print("Dopo la registrazione sono qui nel menu step")
 
         card = HeroCard(
         text ="Ciao, come posso aiutarti? Per uscire digita quit o esci.",
@@ -127,11 +128,20 @@ class MainDialog(ComponentDialog):
                 title ="Info",
                 value="info"
             ),
-            #aggiungere funzionalità
             CardAction(
                 type=ActionTypes.im_back,
                 title ="Logout",
                 value="logout"
+            ),
+            CardAction(
+                type=ActionTypes.im_back,
+                title ="Carica File",
+                value="caricaFile"
+            ),
+            CardAction(
+                type=ActionTypes.im_back,
+                title ="Visualizza File",
+                value="visualizzaFile"
             )
         ],   
         )
@@ -141,6 +151,26 @@ class MainDialog(ComponentDialog):
                 MessageFactory.attachment(CardFactory.hero_card(card))
             ),
         )
+    
+    async def option_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        option=step_context.result
+        if option=="info":
+            info_card = self.create_adaptive_card_attachment()
+            resp = MessageFactory.attachment(info_card)
+            await step_context.context.send_activity(resp)
+            return await step_context.next([])
+        if option=="caricaFile":
+            await step_context.context.send_activity("hai scelto caricafile")
+            return await step_context.begin_dialog(self.carica_file_dialog)
+        if option=="visualizzaFile":
+            await step_context.context.send_activity("hai scelto visualizzafile")
+            return await step_context.begin_dialog(self.wishlist_dialog_id)
+        if option=="logout": 
+            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
+            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
+            await step_context.context.send_activity("Sei stato disconnesso.")
+            return await step_context.cancel_all_dialogs()
+
         
 
         

@@ -4,9 +4,8 @@ from xmlrpc.client import Boolean
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
 from botbuilder.schema import ActivityTypes, InputHints
 from botbuilder.core import CardFactory, MessageFactory
-from bean import archivio
-
 from bean.archivio import Archivio
+from bean.resource_group import ResourceGroup
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.schema._models_py3 import Attachment, CardAction, HeroCard
 from botbuilder.schema._connector_client_enums import ActionTypes
@@ -25,25 +24,22 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.storage import StorageManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.identity import AzureCliCredential
-
-from bean import User
+from bean.user import User
 
 
 
 
 class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog 
     def __init__(self, dialog_id: str = None):
-        super(RegistrationDialog, self).__init__(dialog_id or RegistrationDialog.__name__)
-
-        
+        super(RegistrationDialog, self).__init__(dialog_id or RegistrationDialog.__name__)        
         #self.add_dialog(TextPrompt(TextPrompt.__name__, RegistrationDialog.validate))
         self.add_dialog(TextPrompt(TextPrompt.__name__)) #chiedere l'input all'utente 
         self.add_dialog(
             WaterfallDialog(
                 "WFDialog", [
                     self.select_first,
-                    self.select_second,
-                    self.register]
+                    self.select_second
+                    ]
             )
         )
 
@@ -62,43 +58,33 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
 
 
     async def select_second(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        #print("secondo step registrazione")
         step_context.values["archivio"] = step_context.result
+        nome_archivio = step_context.result
         iduser=step_context.context.activity.from_property.id
-
-        await step_context.context.send_activity("il nome archivio inserito: "+step_context.result)
         
-        if self._validate_resource_group(archivio):
-            arc=self.provision_blob(step_context.result)
+        if not self._validate_resource_group(nome_archivio): #false se nome resource grouo non esiste
+            rg = ResourceGroup(nome_archivio)
+            DatabaseManager.insert_resource_group(rg)
+            await step_context.context.send_activity("Attendere Prego")
+            arc=self.provision_blob(nome_archivio)
             if arc==None:
-                print("account creato !!!")
+                await step_context.context.send_activity("il nome archivio già presente")
+                return await step_context.begin_dialog("WFDialog")
             else:
-                print("account non creato")
+                listarchive=list()
+                listarchive.append(arc)
+                DatabaseManager.insert_archivio(arc) #inserimento archivio nel database
+                utente = User(iduser,rg.getNomeResourceGroup(),arc.getStorageName(),arc.getKeyStorage())
+                DatabaseManager.insert_user(utente) #inserimento utente nel database
+                await step_context.context.send_activity("Registrazione Completata !!!")
+                return await step_context.end_dialog()
+                #step_context.values["utente"] = utente
+                print("account creato")
         else:
+            await step_context.context.send_activity("Nome archivio esistente !!!")
             return await step_context.begin_dialog("WFDialog")
 
-        listarchive=list()
-        listarchive.append(arc)
-        #query inserimento archivio
-        utente=User(iduser,archivio,listarchive)
-        step_context.values["utente"] = utente
         
-
-
-    
-    async def register(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        
-        utente= step_context.values["utente"]
-        #query creazione utente
-
-        message_text = ("Sei registrato.")
-        message = MessageFactory.text(message_text, message_text, InputHints.ignoring_input)
-        await step_context.context.send_activity(message)
-        return await step_context.end_dialog()
-
-
-   
-
 
     @staticmethod #return True account archiviazione creato, altrimenti false
     def provision_blob(nomeArchivio: str):
@@ -116,7 +102,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         LOCATION = "westeurope"
         
         rg_result = resource_client.resource_groups.create_or_update(
-            nomeArchivio,
+            RESOURCE_GROUP_NAME,
             {
             "location": "westeurope"
             }
@@ -133,7 +119,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
 
         if not availability_result.name_available:
             print(f"Storage name {STORAGE_ACCOUNT_NAME} is already in use. Try another name.")
-            return False
+            return None
         
         #The name is available, so provision the account
         poller = storage_client.storage_accounts.begin_create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME,
@@ -149,10 +135,8 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
 
         #Retrieve the account's primary access key and generate a connection string.
         keys = storage_client.storage_accounts.list_keys(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME)
-        conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={keys.keys[0].value}"
+        #conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={keys.keys[0].value}"
         #print(f"Connection string: {conn_string}")
-
-        
         return Archivio(STORAGE_ACCOUNT_NAME,keys.keys[0].value) 
 
 
@@ -164,13 +148,12 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         else :
             False
     
-    @staticmethod #controlla se il nome è già presente
-    async def _validate_resource_group(nome: str) -> Boolean:
-        utente= DatabaseManager.aviability_rg(nome)
-        if utente ==None:
-            return True
-        else :
-            False
+    @staticmethod #controlla se il nome è già presente (false se non è presente True se è presente)
+    def _validate_resource_group(nome: str) -> Boolean:
+        return DatabaseManager.aviability_rg(nome)
+    
+
+        
 
 
 
