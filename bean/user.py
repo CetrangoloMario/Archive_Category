@@ -1,36 +1,33 @@
 import re
+from bean.storage import Storage
 import databaseManager
+from typing import List
 
 class User:
-    def __init__(self, id:str =None,nome:str=None,userStorageAccount: str=None,userAccountKey: str=None,list_storage: list=()):
+    def __init__(self, id:str =None,nome:str=None, pwd: str=None, list_storage: List = None ):
         self.id_user=id
         self.nome_rg=nome
-        self.user_storage_account = userStorageAccount
-        self.user_account_key = userAccountKey
-        self.list_storage= list()
+        self.pwd=pwd
+        self.list_storage= [] if list_storage is None else list_storage
     
     def getIdUser(self):
         return self.id_user
     
     def getNomeRg(self):
         return self.nome_rg
-    
-    def getUserStorageAccount(self):
-        return self.user_storage_account
-    
-    def getUserAccountKey(self):
-        return self.user_account_key
-
-
-    def add_storage(self, storage):
+   
+    def add_storage(self, storage:Storage):
         self.list_storage.append(storage)
-        
+    
+    def delete_storage(self, storage:Storage):
+        self.list_storage.remove(storage)
+    
+    def get_list_storage(self):
+        return self.list_storage
+
     def set_nome_rg(self, nome:str=None):
         self.nome_rg=nome
     
-    #otteine il storage account e account key
-    def getStorageAccounteKey(self,iduser: str):
-        return databaseManager.DatabaseManager.get_storage_account(iduser)
 
     
 

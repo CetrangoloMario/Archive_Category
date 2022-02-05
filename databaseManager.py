@@ -1,3 +1,4 @@
+from ast import For
 import pyodbc
 from bean.storage import Storage
 from bean import user as User
@@ -8,11 +9,11 @@ from config import DefaultConfig
 CONFIG = DefaultConfig
 
 #dati di configurazione per l'utilizzo del database SQL
-server = CONFIG.serverdb
-database = CONFIG.databasedb
-username = CONFIG.usernamedb
-password = CONFIG.passworddb
-driver= '{ODBC Driver 17 for SQL Server}'
+server = CONFIG.SERVERDB
+database = CONFIG.DATABASEDB
+username = CONFIG.USERNAMEDB
+password = CONFIG.PASSWORDDB
+driver= CONFIG.DRIVERDB
 
 
 class DatabaseManager:
@@ -22,7 +23,7 @@ class DatabaseManager:
         register=False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT userid FROM Person where userid=?",iduser)
+                cursor.execute("SELECT userid FROM User where userid=?",iduser)
                 row = cursor.fetchone()
                 while row:
                     register=True
@@ -35,19 +36,20 @@ class DatabaseManager:
         register=False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT nomeRG FROM Person where nomeRG=?",nome)
+                cursor.execute("SELECT nomeRG FROM User where nomeRG=?",nome)
                 row = cursor.fetchone()
                 while row:
                     register=True
                     row = cursor.fetchone() 
         return register
 
+
     @staticmethod
-    def insert_storage(storage: Storage):
+    def insert_storage(storage: Storage, iduser: str):
         register = False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("INSERT INTO Storage VALUES (?,?)",Storage.getStorageName(),Storage.getKeyStorage())
+                cursor.execute("INSERT INTO Storage VALUES (?,?,?)",Storage.getStorageName(),Storage.getKeyStorage(), iduser)
                 #row = cursor.fetchone()
                 #while row:
                 register=True
@@ -62,7 +64,8 @@ class DatabaseManager:
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
-                    cursor.execute("INSERT INTO Person VALUES (?,?,?,?)",user.getIdUser(),user.getNomeRg(),user.getUserStorageAccount(),user.getUserAccountKey())
+                    cursor.execute("INSERT INTO User VALUES (?,?)",user.getIdUser(),user.getNomeRg())
+                    
                     register=True
                 except Exception:
                     register=False
@@ -75,7 +78,7 @@ class DatabaseManager:
     def get_storage_account(iduser: str):
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT userAccountStorage, userAccountKey FROM Person where userid=?",iduser)
+                cursor.execute("SELECT nome, key FROM Storage where userid=?",iduser)
                 row = cursor.fetchone()
                 if len(row) > 0:
                     return row
@@ -89,6 +92,20 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 try:
                     cursor.execute("Delete INTO Storage Where accountStorage=?", arc.getStorageName)
+                    register=True
+                except Exception:
+                    register=False
+
+                #row = cursor.fetchone() 
+        return register
+
+    @staticmethod
+    def delete_total_storage(iduser: str):
+        register = False
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute("Delete INTO Storage Where iduser=?", iduser)
                     register=True
                 except Exception:
                     register=False

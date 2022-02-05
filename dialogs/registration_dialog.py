@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+from pickle import NONE
 from tkinter import dialog
 from xmlrpc.client import Boolean
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
@@ -24,9 +25,9 @@ from azure.mgmt.storage import StorageManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.identity import AzureCliCredential
 from bean.user import User
+from config import DefaultConfig
 
-
-
+CONFIG=DefaultConfig
 
 class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog 
     def __init__(self, dialog_id: str = None):
@@ -110,7 +111,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         rg_result = resource_client.resource_groups.create_or_update(
             RESOURCE_GROUP_NAME,
             {
-            "location": "westeurope"
+            "location": LOCATION
             }
         )
 
@@ -131,7 +132,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         poller = storage_client.storage_accounts.begin_create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME,
             {
                 "location" : LOCATION,
-                "kind": "StorageV2",
+                "kind": "StorageV2",## possibile in futuro scegliere diversi tipi di storage account e redundacy 
                 "sku": {"name": "Standard_LRS"}
             }
         )
@@ -143,6 +144,17 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         keys = storage_client.storage_accounts.list_keys(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME)
         #conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={keys.keys[0].value}"
         #print(f"Connection string: {conn_string}")
+        
+        # Step 4: Provision the blob container in the account (this call is synchronous)
+        CONTAINER_NAME = nomeArchivio+CONFIG.CONTAINER_BLOB_TEMP
+        container = storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_NAME, {})
+        if container is None:
+            return None
+
+        """ripetere per ogni categoria"""
+
+        
+        
         return Archivio(STORAGE_ACCOUNT_NAME,keys.keys[0].value) 
 
 

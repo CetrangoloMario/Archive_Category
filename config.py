@@ -15,10 +15,16 @@ class DefaultConfig:
     APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "")
     CONNECTION_NAME = os.environ.get("ConnectionName", "")
 
+    #Creazione container CAtegoria Standard
+    CONTAINER_BLOB_TEMP = "_TEMP"
+    
+
+
+
     #dati di configurazione per l'utilizzo del database SQL
-    serverdb = 'mysqlservermanlio.database.windows.net'
-    databasedb = 'mysampledatabasemanlio'
-    usernamedb = 'azureuser'
-    passworddb = 'Mansant#198'
-    driverdb= '{ODBC Driver 17 for SQL Server}'
+    SERVERDB = 'mysqlservermanlio.database.windows.net'
+    DATABASEDB = 'mysampledatabasemanlio'
+    USERNAMEDB = 'azureuser'
+    PASSWORDDB = 'Mansant#198'
+    DRIVERDB= '{ODBC Driver 17 for SQL Server}'
     
