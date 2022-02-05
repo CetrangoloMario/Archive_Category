@@ -27,8 +27,8 @@ import os
 import json
 from typing import Dict
 
-registration_dialog=RegistrationDialog()
-carica_file_dialog = CaricaFileDialog()
+registration_dialog = RegistrationDialog()
+carica_file_dialog  = CaricaFileDialog()
 
 class MainDialog(ComponentDialog):
     
@@ -58,7 +58,7 @@ class MainDialog(ComponentDialog):
                 "WFDialog", 
                 [
                  self.menu_step, 
-                 self.options_step,
+                 self.option_step,
                  self.final_step, 
                  self.loop_step]
             )
@@ -66,7 +66,7 @@ class MainDialog(ComponentDialog):
         self.add_dialog(registration_dialog)
 
         self.add_dialog(carica_file_dialog)
-
+    
         self.add_dialog(
             WaterfallDialog(
                 "WFDialogLogin",
@@ -77,7 +77,7 @@ class MainDialog(ComponentDialog):
                 ]
             )
         )
-
+        
         self.initial_dialog_id = "WFDialogLogin"
         self.conversation_state=conversation_state
 

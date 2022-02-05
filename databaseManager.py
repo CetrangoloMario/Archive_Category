@@ -1,6 +1,6 @@
 import pyodbc
 from bean.archivio import Archivio
-from bean.user import User
+import bean.user as User
 from bean.resource_group import ResourceGroup
 from typing import List
 
@@ -76,16 +76,15 @@ class DatabaseManager:
                 #row = cursor.fetchone() 
         return register
 
-    #ottiene storage account e account key , altrimenti restituisce None
+    #ottiene storage account e account key una tupla () , altrimenti restituisce None
     @staticmethod
     def get_storage_account(iduser: str):
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT userAccountStorage,userAccountKey FROM Person where userid=?",iduser)
+                cursor.execute("SELECT userAccountStorage, userAccountKey FROM Person where userid=?",iduser)
                 row = cursor.fetchone()
-                while row:
-                    register=True
-                    return cursor.fetchone() 
+                if len(row) > 0:
+                    return row
         return None
 
 

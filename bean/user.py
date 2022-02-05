@@ -1,5 +1,5 @@
 import re
-from databaseManager import DatabaseManager
+import databaseManager
 
 class User:
     def __init__(self, id:str =None,nome:str=None,userStorageAccount: str=None,userAccountKey: str=None,list_archive: list=()):
@@ -29,8 +29,8 @@ class User:
         self.nome_rg=nome
     
     #otteine il storage account e account key
-    def getStorageAccounteKey(iduser: str):
-        return DatabaseManager.get_storage_account(iduser)
+    def getStorageAccounteKey(self,iduser: str):
+        return databaseManager.DatabaseManager.get_storage_account(iduser)
 
     
 
