@@ -1,8 +1,6 @@
 
 from bean.user import User
-from bean.archivio import Archivio
-from bean.resource_group import ResourceGroup
+from bean.storage import Storage
 
 
-
-__all__ = [ "User","Archivio","ResourceGroup"]
+__all__ = [ "User","Storage"]

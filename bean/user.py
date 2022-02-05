@@ -2,12 +2,12 @@ import re
 import databaseManager
 
 class User:
-    def __init__(self, id:str =None,nome:str=None,userStorageAccount: str=None,userAccountKey: str=None,list_archive: list=()):
+    def __init__(self, id:str =None,nome:str=None,userStorageAccount: str=None,userAccountKey: str=None,list_storage: list=()):
         self.id_user=id
         self.nome_rg=nome
         self.user_storage_account = userStorageAccount
         self.user_account_key = userAccountKey
-        self.list_archive= list()
+        self.list_storage= list()
     
     def getIdUser(self):
         return self.id_user
@@ -22,8 +22,8 @@ class User:
         return self.user_account_key
 
 
-    def add_archive(self, archive):
-        self.list_archive.append(archive)
+    def add_storage(self, storage):
+        self.list_storage.append(storage)
         
     def set_nome_rg(self, nome:str=None):
         self.nome_rg=nome

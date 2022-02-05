@@ -5,7 +5,6 @@ from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult,
 from botbuilder.schema import ActivityTypes, InputHints
 from botbuilder.core import CardFactory, MessageFactory
 from bean.archivio import Archivio
-from bean.resource_group import ResourceGroup
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.schema._models_py3 import Attachment, CardAction, HeroCard
 from botbuilder.schema._connector_client_enums import ActionTypes
@@ -52,7 +51,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         return await step_context.prompt(
                TextPrompt.__name__,
                 PromptOptions(
-                    prompt=MessageFactory.text("Inserisci il nome dell'archivio ? ")
+                    prompt=MessageFactory.text("Inserisci il nome dell'archivio ? ")#RG nostro
                 ),
             )
 
@@ -62,31 +61,38 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         nome_archivio = step_context.result
         iduser=step_context.context.activity.from_property.id
         
-        if not self._validate_resource_group(nome_archivio): #false se nome resource grouo non esiste
-            rg = ResourceGroup(nome_archivio)
-            DatabaseManager.insert_resource_group(rg)
-            await step_context.context.send_activity("Attendere Prego")
+        if not self._validate_resource_group(nome_archivio): #false se nome resource group non esiste
+            rg = nome_archivio
+
+            await step_context.context.send_activity("....Attendere Prego ci vorrà pochi secondi.....")
             arc=self.provision_blob(nome_archivio)
             if arc==None:
-                await step_context.context.send_activity("il nome archivio già presente")
+                await step_context.context.send_activity("il nome archivio già presente... ricominciamo insieme... ritenta sarai più fortunato")
                 return await step_context.begin_dialog("WFDialog")
             else:
                 listarchive=list()
                 listarchive.append(arc)
+
                 DatabaseManager.insert_archivio(arc) #inserimento archivio nel database
-                utente = User(iduser,rg.getNomeResourceGroup(),arc.getStorageName(),arc.getKeyStorage())
-                DatabaseManager.insert_user(utente) #inserimento utente nel database
+                
+                utente = User(iduser,nome_archivio,arc.getStorageName(),arc.getKeyStorage())
+
+                if not DatabaseManager.insert_user(utente): #inserimento utente nel database
+                    #delete dati database errore query inserimento
+                    DatabaseManager.delete_archivio(arc)
+                    
+
                 await step_context.context.send_activity("Registrazione Completata !!!")
                 return await step_context.end_dialog()
                 #step_context.values["utente"] = utente
-                print("account creato")
+                print("account creato\n ")
         else:
             await step_context.context.send_activity("Nome archivio esistente !!!")
             return await step_context.begin_dialog("WFDialog")
 
         
 
-    @staticmethod #return True account archiviazione creato, altrimenti false
+    @staticmethod #return Archivio se account archiviazione creato, altrimenti None
     def provision_blob(nomeArchivio: str):
         #print("provisoni blov")
         # Acquire a credential object using CLI-based authentication.

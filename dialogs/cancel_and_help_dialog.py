@@ -50,10 +50,13 @@ class CancelAndHelpDialog(ComponentDialog):
                 await inner_dc.context.send_activity(cancel_message)
                 return await inner_dc.cancel_all_dialogs()
             
+
+            ## dovremmo realizzare logout forzato
+            """
             if text == "logout":
                 bot_adapter: BotFrameworkAdapter = inner_dc.context.adapter
                 await bot_adapter.sign_out_user(inner_dc.context, self.connection_name)
                 await inner_dc.context.send_activity("You have been signed out.")
-                return await inner_dc.cancel_all_dialogs()
+                return await inner_dc.cancel_all_dialogs()"""
 
         return None

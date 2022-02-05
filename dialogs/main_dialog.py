@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+from cmath import log
+from distutils.log import Log
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, DialogTurnStatus, WaterfallDialog, WaterfallStepContext
 from botbuilder.schema import (
     ChannelAccount,
@@ -22,7 +24,7 @@ from databaseManager import DatabaseManager
 from botbuilder.schema._connector_client_enums import ActivityTypes
 from botbuilder.dialogs.dialog import Dialog
 from botbuilder.core import BotFrameworkAdapter
-from dialogs.carica_file_dialog import CaricaFileDialog
+from dialogs.upload_file_dialog import CaricaFileDialog
 import os
 import json
 from typing import Dict
@@ -63,6 +65,7 @@ class MainDialog(ComponentDialog):
                  self.loop_step]
             )
         )
+        
         self.add_dialog(registration_dialog)
 
         self.add_dialog(carica_file_dialog)
@@ -118,7 +121,6 @@ class MainDialog(ComponentDialog):
         
     
     async def menu_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        print("Dopo la registrazione sono qui nel menu step")
 
         card = HeroCard(
         text ="Ciao, come posso aiutarti? Per uscire digita quit o esci.",
@@ -154,24 +156,26 @@ class MainDialog(ComponentDialog):
     
     async def option_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         option=step_context.result
-        if option=="info":
+        
+        if option=="info": ## Riassunto account dimensione storage ....
             info_card = self.create_adaptive_card_attachment()
             resp = MessageFactory.attachment(info_card)
             await step_context.context.send_activity(resp)
             return await step_context.next([])
+
         if option=="caricaFile":
             await step_context.context.send_activity("hai scelto caricafile")
             return await step_context.begin_dialog(self.carica_file_dialog)
+
         if option=="visualizzaFile":
             await step_context.context.send_activity("hai scelto visualizzafile")
             return await step_context.begin_dialog(self.wishlist_dialog_id)
+
         if option=="logout": 
             bot_adapter: BotFrameworkAdapter = step_context.context.adapter
             await bot_adapter.sign_out_user(step_context.context, self.connection_name)
             await step_context.context.send_activity("Sei stato disconnesso.")
             return await step_context.cancel_all_dialogs()
-
-        
 
         
     async def final_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
