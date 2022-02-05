@@ -14,4 +14,11 @@ class DefaultConfig:
     APP_ID = os.environ.get("MicrosoftAppId", "")
     APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "")
     CONNECTION_NAME = os.environ.get("ConnectionName", "")
+
+    #dati di configurazione per l'utilizzo del database SQL
+    serverdb = 'mysqlservermanlio.database.windows.net'
+    databasedb = 'mysampledatabasemanlio'
+    usernamedb = 'azureuser'
+    passworddb = 'Mansant#198'
+    driverdb= '{ODBC Driver 17 for SQL Server}'
     
