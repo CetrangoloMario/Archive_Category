@@ -1,44 +1,31 @@
+use schema Categoryarchivedb
 
-DROP TABLE IF EXISTS blob;
-CREATE TABLE blob (
-  name varchar(20) NOT NULL,
-  name_container varchar(45) NOT NULL,
-  crypto varchar(50) DEFAULT NULL,
-  compression varchar(50) DEFAULT NULL,
-  PRIMARY KEY (name),
-  UNIQUE KEY name_UNIQUE (name),
-  UNIQUE KEY name_container_UNIQUE (name_container),
-  CONSTRAINT name_container FOREIGN KEY (name_container) REFERENCES container (name) ON UPDATE CASCADE
+create table user (
+  idUser varchar(100) not null constraint user_pk primary key nonclustered,
+  nomeRG varchar(50) not null unique,
+)
+go
+create table storage (
+  name varchar(50) not null constraint storage_pk primary key nonclustered,
+  key varchar(200) not null,
+  iduser varchar(100) not null unique,
+  password varchar(30) not null,
+  CONSTRAINT FK_iduser_iduser FOREIGN KEY (iduser) REFERENCES user (idUser) ON UPDATE CASCADE ON DELETE CASCADE
 ) 
-
-DROP TABLE IF EXISTS container;
-CREATE TABLE container (
-  name varchar(30) NOT NULL,
-  nome_storage varchar(50) NOT NULL,
-  PRIMARY KEY (name),
-  UNIQUE KEY name_UNIQUE (name),
-  UNIQUE KEY nome_storage_UNIQUE (nome_storage),
+go
+create table container (
+  name varchar(30) not null constraint container_pk primary key nonclustered,
+  nome_storage varchar(50) not null unique,
   KEY nome_storage_idx (nome_storage),
-  CONSTRAINT nome_storage FOREIGN KEY (nome_storage) REFERENCES storage (name) ON UPDATE CASCADE
+  CONSTRAINT FK_nome_storage_storage FOREIGN KEY (nome_storage) REFERENCES storage (name) ON UPDATE CASCADE ON DELETE CASCADE
+) 
+go
+create table blob (
+  name varchar(20) not null constraint blob_pk primary key nonclustered,
+  name_container varchar(45) not null unique,
+  crypto varchar(50) DEFAULT null,
+  compression varchar(50) DEFAULT null,
+  CONSTRAINT FK_name_container_name FOREIGN KEY (name_container) REFERENCES container (name) ON UPDATE CASCADE ON DELETE CASCADE
 ) 
 
 
-DROP TABLE IF EXISTS storage;
-CREATE TABLE storage (
-  name varchar(50) NOT NULL,
-  key varchar(200) NOT NULL,
-  iduser varchar(100) NOT NULL,
-  password varchar(30) NOT NULL,
-  PRIMARY KEY (name),
-  KEY iduser_idx (iduser),
-  CONSTRAINT iduser FOREIGN KEY (iduser) REFERENCES user (idUser) ON UPDATE CASCADE
-) 
-
-DROP TABLE IF EXISTS user;
-CREATE TABLE user (
-  idUser varchar(100) NOT NULL,
-  nomeRG varchar(50) NOT NULL,
-  PRIMARY KEY (idUser),
-  UNIQUE KEY idUser_UNIQUE (idUser),
-  UNIQUE KEY nomeRG_UNIQUE (nomeRG)
-) 
