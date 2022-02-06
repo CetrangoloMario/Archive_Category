@@ -12,6 +12,7 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, _
 #cioè container già creati standard e dall'utente personali oppure dare la possibilità di creare uno nuovo.
 
 class Upload_file_dialog(CancelAndHelpDialog):
+
     
     def __init__(self, dialog_id: str = None):
         super(Upload_file_dialog,self).__init__(dialog_id or Upload_file_dialog.__name__)   
@@ -46,7 +47,7 @@ class Upload_file_dialog(CancelAndHelpDialog):
         #recuperare storage account e account key
         row = self.user.getStorageAccounteKey(step_context.context.activity.from_property.id)
         await step_context.context.send_activity("Controlliamo se hai già un contenitore!!!!")
-        print("riga del database: ",row)
+        #print("riga del database: ",row)
         storage = Storage(row[0],row[1])  #riga 0 --> storage account , riga 1 account key
         STORAGE_ACCOUNT_NAME = storage.getStorageName()
         ACCOUNT_KEY = storage.getKeyStorage()

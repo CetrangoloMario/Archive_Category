@@ -4,10 +4,9 @@ import databaseManager
 from typing import List
 
 class User:
-    def __init__(self, id:str =None,nome:str=None, pwd: str=None, list_storage: List = None ):
+    def __init__(self, id:str =None,nome_rg:str=None, list_storage: List = None ):
         self.id_user=id
-        self.nome_rg=nome
-        self.pwd=pwd
+        self.nome_rg=nome_rg
         self.list_storage= [] if list_storage is None else list_storage
     
     def getIdUser(self):

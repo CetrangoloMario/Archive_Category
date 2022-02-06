@@ -45,13 +45,15 @@ class DatabaseManager:
 
 
     @staticmethod
-    def insert_storage(storage: Storage, iduser: str):
+    def insert_storage(storage: Storage):
         register = False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("INSERT INTO Storage VALUES (?,?,?)",Storage.getStorageName(),Storage.getKeyStorage(), iduser)
-                #row = cursor.fetchone()
-                #while row:
+
+                try:
+                    cursor.execute("INSERT INTO Storage VALUES (?,?,?,?)",Storage.getStorageName(),Storage.getKeyStorage(), Storage.getIdUserStorage(), Storage.getPwd())
+                except pyodbc.IntegrityError:
+                        pass
                 register=True
                 #row = cursor.fetchone() 
         return register
@@ -86,7 +88,7 @@ class DatabaseManager:
 
 
     @staticmethod
-    def delete_archive(arc: Storage):
+    def delete_storage(arc: Storage):
         register = False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
