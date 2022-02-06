@@ -22,7 +22,7 @@ create table container (
 go
 create table blob (
   nomeblob varchar(20) not null constraint blob_pk primary key nonclustered,
-  name_container varchar(45) not null unique,
+  name_container varchar(30) not null unique,
   crypto varchar(50) DEFAULT null,
   comprimere varchar(50) DEFAULT null,
   CONSTRAINT FK_name_container_name FOREIGN KEY (name_container) REFERENCES container (name) ON UPDATE CASCADE ON DELETE CASCADE
