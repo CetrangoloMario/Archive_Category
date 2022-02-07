@@ -27,7 +27,7 @@ from azure.identity import AzureCliCredential
 from bean.user import User
 from config import DefaultConfig
 
-CONFIG=DefaultConfig
+CONFIG=DefaultConfig()
 
 class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog 
     def __init__(self, dialog_id: str = None):
@@ -90,9 +90,6 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
                 if not DatabaseManager.insert_storage(storage): #inserimento storage nel database
                     #delete dati database errore query inserimento
                     DatabaseManager.delete_storage(storage)
-                
-                
-
                 await step_context.context.send_activity("Registrazione Completata !!!")
                 return await step_context.end_dialog()
                 #step_context.values["utente"] = utente
@@ -104,7 +101,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         
 
     @staticmethod #return Archivio se account archiviazione creato (Storage), altrimenti None
-    def provision_blob(nomeArchivio: str, id_user: str):
+    def provision_blob(nomeArchivio: str, pwd: str ,id_user: str):
         #print("provisoni blov")
         # Acquire a credential object using CLI-based authentication.
         credential = AzureCliCredential()
@@ -146,6 +143,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
                 "sku": {"name": "Standard_LRS"}
             }
         )
+        
 
         account_result = poller.result()
         #print(f"Provisioned storage account {account_result.name}")
@@ -165,7 +163,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
 
         
         
-        return Storage(STORAGE_ACCOUNT_NAME,keys.keys[0].value, id_user ) 
+        return Storage(STORAGE_ACCOUNT_NAME,keys.keys[0].value,id_user,pwd) 
 
 
     @staticmethod #controlla se il nome è già presente

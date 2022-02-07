@@ -24,13 +24,13 @@ from databaseManager import DatabaseManager
 from botbuilder.schema._connector_client_enums import ActivityTypes
 from botbuilder.dialogs.dialog import Dialog
 from botbuilder.core import BotFrameworkAdapter
-from dialogs.upload_file_dialog import CaricaFileDialog
+from dialogs.upload_file_dialog import Upload_file_dialog
 import os
 import json
 from typing import Dict
 
 registration_dialog = RegistrationDialog()
-carica_file_dialog  = CaricaFileDialog()
+carica_file_dialog  = Upload_file_dialog()
 
 class MainDialog(ComponentDialog):
     

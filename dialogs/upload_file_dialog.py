@@ -22,13 +22,14 @@ class Upload_file_dialog(CancelAndHelpDialog):
             WaterfallDialog(
                 "WFUploadFile", [
                     self.upload,#in che storageaccount vuoi inserirlo prima domanda
+                    """
                     self.step_category,#machine learning
                     self.step_choice, #scelta utente ok va WFDialogOption
-                    self.step_choice_category,#scelta tra categorie esistenti o crea una nuova
+                    self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
                     ]
             )
         )
-
+        """
         self.add_dialog(
             WaterfallDialog(
                 "WFDialogOption", [
@@ -39,6 +40,7 @@ class Upload_file_dialog(CancelAndHelpDialog):
                     ]
             )
         )
+        """
 
         self.initial_dialog_id = "WFUploadFile"
 
