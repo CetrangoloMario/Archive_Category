@@ -23,7 +23,7 @@ class DatabaseManager:
         register=False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT userid FROM User where userid=?",iduser)
+                cursor.execute("SELECT idUser FROM utente where idUser=?",iduser)
                 row = cursor.fetchone()
                 while row:
                     register=True
@@ -36,7 +36,7 @@ class DatabaseManager:
         register=False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT nomeRG FROM User where nomeRG=?",nome)
+                cursor.execute("SELECT nomeRG FROM utente where nomeRG=?",nome)
                 row = cursor.fetchone()
                 while row:
                     register=True
@@ -51,7 +51,7 @@ class DatabaseManager:
             with conn.cursor() as cursor:
 
                 try:
-                    cursor.execute("INSERT INTO Storage VALUES (?,?,?,?)",Storage.getStorageName(),Storage.getKeyStorage(), Storage.getIdUserStorage(), Storage.getPwd())
+                    cursor.execute("INSERT INTO storage VALUES (?,?,?,?)",storage.getStorageName(),storage.getKeyStorage(), storage.getIdUserStorage(), storage.getPwd())
                 except pyodbc.IntegrityError:
                         pass
                 register=True
@@ -66,7 +66,7 @@ class DatabaseManager:
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
-                    cursor.execute("INSERT INTO User VALUES (?,?)",user.getIdUser(),user.getNomeRg())
+                    cursor.execute("INSERT INTO utente VALUES (?,?)",user.getIdUser(),user.getNomeRg())
                     
                     register=True
                 except Exception:
@@ -80,7 +80,7 @@ class DatabaseManager:
     def get_storage_account(iduser: str):
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT nome, key FROM Storage where userid=?",iduser)
+                cursor.execute("SELECT name, keystorage FROM storage where iduser=?",iduser)
                 row = cursor.fetchone()
                 if len(row) > 0:
                     return row
@@ -93,7 +93,7 @@ class DatabaseManager:
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
-                    cursor.execute("Delete INTO Storage Where accountStorage=?", arc.getStorageName)
+                    cursor.execute("Delete INTO storage Where name=?", arc.getStorageName)
                     register=True
                 except Exception:
                     register=False
@@ -107,7 +107,7 @@ class DatabaseManager:
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
-                    cursor.execute("Delete INTO Storage Where iduser=?", iduser)
+                    cursor.execute("Delete INTO storage Where iduser=?", iduser)
                     register=True
                 except Exception:
                     register=False

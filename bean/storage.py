@@ -1,6 +1,4 @@
 import re
-from bean.storage import Storage
-import databaseManager
 from typing import List
 
 class Storage:#si aggingono mano mano i tag .... tipo di compressione criptazione scelta.
@@ -24,9 +22,6 @@ class Storage:#si aggingono mano mano i tag .... tipo di compressione criptazion
     def getPwd(self):
         return self.pwd
 
-    
 
 
-
-    
         
