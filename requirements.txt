@@ -7,7 +7,9 @@ pyadaptivecards>=0.1.1
 azure-ai-textanalytics
 botbuilder-schema>=4.11.0
 botframework-connector>=4.11.0
+azure-mgmt-resource
 azure-mgmt-storage
 azure-identity
 azure-mgmt-resource>=18.0.0
 azure-identity>=1.5.0
+azure-storage-blob
