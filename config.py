@@ -29,9 +29,16 @@ class DefaultConfig:
 
 
     #dati di configurazione per l'utilizzo del database SQL
+<<<<<<< HEAD
     SERVERDB = 'db-test-archive.database.windows.net'
     DATABASEDB = 'Archivecategorydb'
     USERNAMEDB = 'azureuser'
     PASSWORDDB = 'Mansant#198'
+=======
+    SERVERDB = ''
+    DATABASEDB = ''
+    USERNAMEDB = ''
+    PASSWORDDB = ''
+>>>>>>> 6a8ee27f6ca352958b42e9a8d7f68731a28e0ec4
     DRIVERDB= '{ODBC Driver 17 for SQL Server}'
     

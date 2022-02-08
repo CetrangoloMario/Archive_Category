@@ -12,6 +12,10 @@ azure-mgmt-storage
 azure-identity
 azure-mgmt-resource>=18.0.0
 azure-identity>=1.5.0
+<<<<<<< HEAD
 azure-storage-blob
 pyaes
 pbkdf2
+=======
+azure-storage-blob
+>>>>>>> 6a8ee27f6ca352958b42e9a8d7f68731a28e0ec4
