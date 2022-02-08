@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+import imp
 from pickle import NONE
 from tkinter import dialog
 from xmlrpc.client import Boolean
@@ -26,6 +27,9 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.identity import AzureCliCredential
 from bean.user import User
 from config import DefaultConfig
+from utilities.crypto import Crypto 
+
+
 
 CONFIG=DefaultConfig()
 
@@ -72,6 +76,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         pwd=step_context.result
         rg = step_context.values["rg"]
         iduser=step_context.context.activity.from_property.id
+        
         
         if not self._validate_resource_group(rg): #false se nome resource group non esiste
 
@@ -151,19 +156,25 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         #Retrieve the account's primary access key and generate a connection string.
         keys = storage_client.storage_accounts.list_keys(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME)
         #conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={keys.keys[0].value}"
+
         #print(f"Connection string: {conn_string}")
+
+        print("testo in chiaro: ",keys.keys[0].value)
         
         # Step 4: Provision the blob container in the account (this call is synchronous)
         CONTAINER_NAME = nomeArchivio+CONFIG.CONTAINER_BLOB_TEMP
         container = storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_NAME, {})
+
         if container is None:
             return None
 
         """ripetere per ogni categoria"""
 
-        
-        
-        return Storage(STORAGE_ACCOUNT_NAME,keys.keys[0].value,id_user,pwd) 
+        """cifrare l'account key"""
+        crypto = Crypto()
+        cipher = crypto.encrypt(keys.keys[0].value)
+        print("cifratura: ",cipher)
+        return Storage(STORAGE_ACCOUNT_NAME,cipher,id_user,pwd) 
 
 
     @staticmethod #controlla se il nome è già presente

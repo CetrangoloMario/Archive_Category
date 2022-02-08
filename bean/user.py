@@ -1,7 +1,7 @@
 import re
 from bean.storage import Storage
 from typing import List
-
+import databaseManager
 class User:
     def __init__(self, id:str =None,nome_rg:str=None, list_storage: List = None ):
         self.id_user=id
@@ -26,6 +26,10 @@ class User:
     def set_nome_rg(self, nome:str=None):
         self.nome_rg=nome
     
+    def getStorageAccounteKey(self, iduser: str):
+        return databaseManager.DatabaseManager.get_storage_account(iduser)
+    
+
 
     
 

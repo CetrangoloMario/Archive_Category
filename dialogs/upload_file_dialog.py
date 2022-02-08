@@ -5,7 +5,11 @@ from databaseManager import DatabaseManager
 from bean.user import User
 from bean.storage import Storage
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__
-
+from utilities.crypto import Crypto
+from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.resource import ResourceManagementClient
+from azure.identity import AzureCliCredential
 #passi utente carica il file, poi viene categorizzato dal servizio machine learning, (serve blob temporaneo)
 #dopo averlo caricato dialogo per inserire alcuni tag da stabilire, compressione cripto e cancellazione del file temporaneo.
 #utente carica il file, viene categorizzato se utente accetta la categoria ok se no si deve far scegliere utente tra le categorie gia preseti 
@@ -47,17 +51,30 @@ class Upload_file_dialog(CancelAndHelpDialog):
     
     async def upload(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         #recuperare storage account e account key
-        row = self.user.getStorageAccounteKey(step_context.context.activity.from_property.id)
+        row = self.user.getStorageAccounteKey(step_context.context.activity.from_property.id) #riga 0 --> storage account , riga 1 account key
         await step_context.context.send_activity("Controlliamo se hai già un contenitore!!!!")
-        #print("riga del database: ",row)
-        storage = Storage(row[0],row[1])  #riga 0 --> storage account , riga 1 account key
+
+        """processo di decifratura"""
+        crypto = Crypto()
+        cipher = row[1] #prelevo l'account key cifrato
+        plaintext = crypto.decrypt(cipher) #decifro
+        storage = Storage(row[0],plaintext.decode("utf-8"))  #decode restituisce una strinfa in formato unicode
+
+        """Stringa di connesssione per connettere al storage account"""
         STORAGE_ACCOUNT_NAME = storage.getStorageName()
         ACCOUNT_KEY = storage.getKeyStorage()
         self.connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={ACCOUNT_KEY}"
-        #print("stringa di connessione: ",self.connection_string)
+        
         # Create the BlobServiceClient object which will be used to create a container client
         blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
-        list_response = blob_service_client.list_containers()
+        container = blob_service_client.get_container_client("mansuper-temp")
+        blob_list = container.list_blobs()
+
+        for blob in blob_list:
+            await step_context.context.send_activity("Hai un file che si chiama: "+blob.name)
+
+        
+
         
 
 

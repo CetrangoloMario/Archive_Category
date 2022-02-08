@@ -2,7 +2,6 @@ from ast import For
 import pyodbc
 from bean.storage import Storage
 from bean import user as User
-from bean.user import User 
 from typing import List
 from config import DefaultConfig
 
