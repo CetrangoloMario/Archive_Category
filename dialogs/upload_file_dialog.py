@@ -101,7 +101,7 @@ class Upload_file_dialog(ComponentDialog):
         name_container_temp = container.getContainerTempByNameStorage(STORAGE_ACCOUNT_NAME)
     
         blob_client = blob_service_client.get_blob_client(container=name_container_temp, blob=nome_blob) 
-        blob_client.upload_blob_from_url(file.__dict__["content_url"]) #
+        blob_client.upload_blob_from_url(file.__dict__["content_url"]) #prelevo l'url per caricare il file nel blob
         await step_context.context.send_activity("....File caricato con successo nel container temporaneo.....")
         return await step_context.next(1)
 
