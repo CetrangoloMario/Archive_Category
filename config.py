@@ -13,9 +13,9 @@ class DefaultConfig:
     """ Bot Configuration """
 
     PORT = 3978
-    APP_ID = os.environ.get("MicrosoftAppId", "77956cb5-e08b-42f7-b137-7625e2763199")
-    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "AtLeastSixteenCharacters_0")
-    CONNECTION_NAME = os.environ.get("ConnectionName", "ManlioConnection2")
+    APP_ID = os.environ.get("MicrosoftAppId", "")
+    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "")
+    CONNECTION_NAME = os.environ.get("ConnectionName", "")
 
     #dati per crittografare il db utilizzaimo l'algoritmo AES (CTR Block Mode)
     SECRET_PASSWORD = "manliokey" #settare secret key in azure
@@ -29,9 +29,9 @@ class DefaultConfig:
 
 
     #dati di configurazione per l'utilizzo del database SQ
-    SERVERDB = 'db-test-archive.database.windows.net'
-    DATABASEDB = 'Archivecategorydb'
-    USERNAMEDB = 'azureuser'
-    PASSWORDDB = 'Mansant#198'
+    SERVERDB = ''
+    DATABASEDB = ''
+    USERNAMEDB = ''
+    PASSWORDDB = ''
     DRIVERDB= '{ODBC Driver 17 for SQL Server}'
     
