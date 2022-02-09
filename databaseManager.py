@@ -1,5 +1,6 @@
 from ast import For
 import pyodbc
+from bean.container import Container
 from bean.storage import Storage
 from bean import user as User
 from typing import List
@@ -113,6 +114,31 @@ class DatabaseManager:
 
                 #row = cursor.fetchone() 
         return register
+    
+    @staticmethod
+    def insert_container(container: Container):
+        register = False
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute("INSERT INTO container VALUES (?,?)",container.getNameContainer(),container.getNameStorage())
+                except pyodbc.IntegrityError:
+                        pass
+                register=True
+                #row = cursor.fetchone() 
+        return register
+    
+    def getContainerTempByNameStorage(name_storage: str):
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT name FROM container where nome_storage=? AND name LIKE('%temp%');",name_storage)
+                row = cursor.fetchone()
+                if len(row) > 0:
+                    return row[0]  #restituisco solo il nome del container temporaneo
+        return None
+
+
+
 
     
 

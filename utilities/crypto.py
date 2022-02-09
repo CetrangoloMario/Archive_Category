@@ -19,6 +19,6 @@ class Crypto():
     def decrypt(self, ciphertext: str):
         decryt_bin = binascii.unhexlify(ciphertext) #Restituisce i dati binari rappresentati dalla stringa esadecimale hexstr 
         aes = pyaes.AESModeOfOperationCTR(self.__key, pyaes.Counter(self.__iv))
-        return aes.decrypt(decryt_bin)
-        
+        decrypted = aes.decrypt(decryt_bin)
+        return decrypted.decode("utf-8") #decode restituisce una strinfa in formato unicode
 

@@ -1,12 +1,15 @@
 from contextlib import nullcontext
 import imp
 from pickle import NONE
+import string
 from tkinter import dialog
 from xmlrpc.client import Boolean
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
 from botbuilder.schema import ActivityTypes, InputHints
 from botbuilder.core import CardFactory, MessageFactory
+from grapheme import length
 from bean.storage import Storage
+from bean.container import Container
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.schema._models_py3 import Attachment, CardAction, HeroCard
 from botbuilder.schema._connector_client_enums import ActionTypes
@@ -42,7 +45,6 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
             WaterfallDialog(
                 "WFDialog", [
                     self.select_first, #archivio
-                    self.select_first_, #pwd
                     self.select_second, #creazione oggetti user e storage
                     ]
             )
@@ -61,26 +63,20 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
                 ),
             )
 
-    async def select_first_(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        step_context.values["rg"]=step_context.result
-
-        return await step_context.prompt(
-               TextPrompt.__name__,
-                PromptOptions(
-                    prompt=MessageFactory.text("Inserisci password dell'archivio ? Servira per le operazioni di conferma e condivisioni dello storage con altre persone ")#RG nostro
-                ),
-            )
-
-
     async def select_second(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        pwd=step_context.result
-        rg = step_context.values["rg"]
+        rg=step_context.result
         iduser=step_context.context.activity.from_property.id
         
         
         if not self._validate_resource_group(rg): #false se nome resource group non esiste
 
             await step_context.context.send_activity("....Attendere Prego ci vorrà pochi secondi.....")
+
+            #generare una password random per la criptazione
+            password = self.generate_password()
+            crypto = Crypto()
+            pwd = crypto.encrypt(password)  #cifro la password
+
             storage=self.provision_blob(rg,pwd,iduser)
             if storage==None:
                 await step_context.context.send_activity("il nome archivio già presente... ricominciamo insieme... ritenta sarai più fortunato")
@@ -159,8 +155,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
 
         #print(f"Connection string: {conn_string}")
 
-        print("testo in chiaro: ",keys.keys[0].value)
-        
+
         # Step 4: Provision the blob container in the account (this call is synchronous)
         CONTAINER_NAME = nomeArchivio+CONFIG.CONTAINER_BLOB_TEMP
         container = storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_NAME, {})
@@ -168,12 +163,16 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         if container is None:
             return None
 
-        """ripetere per ogni categoria"""
+        """ripetere per ogni categoria e inserisco nel database"""
+        
+        container_temp = Container(CONTAINER_NAME,STORAGE_ACCOUNT_NAME) #creo container temporaneo
+        DatabaseManager.insert_container(container_temp) #inserisco nel db
+
+
 
         """cifrare l'account key"""
         crypto = Crypto()
         cipher = crypto.encrypt(keys.keys[0].value)
-        print("cifratura: ",cipher)
         return Storage(STORAGE_ACCOUNT_NAME,cipher,id_user,pwd) 
 
 
@@ -188,6 +187,23 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
     @staticmethod #controlla se il nome è già presente (false se non è presente True se è presente)
     def _validate_resource_group(nome: str) -> Boolean:
         return DatabaseManager.aviability_rg(nome)
+    
+    @staticmethod
+    def generate_password():
+        length = random.randrange(10,30)
+
+        lower = string.ascii_lowercase
+        upper = string.ascii_uppercase
+        num = string.digits
+        symbol = string.punctuation
+
+        all = lower + upper + num+ symbol
+
+        temp = random.sample(all,length)
+
+        return "".join(temp) #ritorna la password
+
+
     
 
         
