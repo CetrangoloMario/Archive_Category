@@ -173,6 +173,8 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         """cifrare l'account key"""
         crypto = Crypto()
         cipher = crypto.encrypt(keys.keys[0].value)
+        
+        
         return Storage(STORAGE_ACCOUNT_NAME,cipher,id_user,pwd) 
 
 

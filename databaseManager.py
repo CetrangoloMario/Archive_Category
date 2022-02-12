@@ -75,15 +75,29 @@ class DatabaseManager:
                 #row = cursor.fetchone() 
         return register
 
-    #ottiene storage account e account key una tupla () , altrimenti restituisce None
     @staticmethod
-    def get_storage_account(iduser: str):
+    def get_user(id: str):
+        register = False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT name, keystorage FROM storage where iduser=?",iduser)
+                cursor.execute("SELECT idUser, nomeRG INTO utente VALUES idUser",id)
+                row = cursor.fetchone()
+                if len(row) is not None:
+                    return row
+        return None
+    
+    #tupla list storage , altrimenti restituisce None
+    @staticmethod
+    def getListStorageByID(iduser: str):
+        list=[]
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM storage where iduser=?",iduser)
                 row = cursor.fetchone()
                 if len(row) > 0:
-                    return row
+                    for x in row:
+                        list.append(Storage(x[0],x[1],x[2],x[3]))
+                return list
         return None
 
 
@@ -128,15 +142,42 @@ class DatabaseManager:
                 #row = cursor.fetchone() 
         return register
     
-    def getContainerTempByNameStorage(name_storage: str):
+    
+    
+    def getListContainerbyStorage(name_storage: str ):
+        list=[]
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT name FROM container where nome_storage=? AND name LIKE('%temp%');",name_storage)
+                cursor.execute("SELECT * FROM container where nome_storage=?",name_storage)
                 row = cursor.fetchone()
                 if len(row) > 0:
-                    return row[0]  #restituisco solo il nome del container temporaneo
+                    for x in row:
+                        list.append(Container(*x))
+                return list 
+        return None
+    
+    
+    def getContainerbyName(name_storage: str, nomeContainer : str):
+        
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM container where nome_storage=? AND name=?",name_storage,nomeContainer)
+                row = cursor.fetchone()
+                if len(row) > 0:
+                    return Container(*row) 
         return None
 
+
+    @staticmethod
+    def getStorageByNome(nome: str):
+       
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM storage where name=?",nome)
+                row = cursor.fetchone()
+                if len(row) > 0:
+                    return Storage(*row)
+        return None
 
 
 

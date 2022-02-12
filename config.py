@@ -23,9 +23,9 @@ class DefaultConfig:
     SECRET_IV = 256 #secrets.randbits(256) 
 
     #Creazione container CAtegoria Standard
-    CONTAINER_BLOB_TEMP = "-temp"
+    CONTAINER_BLOB_TEMP = "-temp" #archivio-temp
     
-
+    
 
 
     #dati di configurazione per l'utilizzo del database SQ

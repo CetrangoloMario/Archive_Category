@@ -26,9 +26,6 @@ class User:
     def set_nome_rg(self, nome:str=None):
         self.nome_rg=nome
     
-    def getStorageAccounteKey(self, iduser: str):
-        return databaseManager.DatabaseManager.get_storage_account(iduser)
-    
 
 
     

@@ -1,4 +1,6 @@
-from typing import Container
+
+from typing import List
+import databaseManager
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
 from databaseManager import DatabaseManager
@@ -7,6 +9,19 @@ from bean.storage import Storage
 from bean.container import Container
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__
 from utilities.crypto import Crypto
+from botbuilder.core import BotFrameworkAdapter
+from botbuilder.dialogs.prompts import TextPrompt, PromptOptions, ChoicePrompt
+from botbuilder.core import MessageFactory, TurnContext, CardFactory, UserState
+from botbuilder.schema import Attachment, InputHints, SuggestedActions
+from botbuilder.dialogs.choices import Choice
+from botbuilder.schema import (
+    ChannelAccount,
+    HeroCard,
+    CardImage,
+    CardAction,
+    ActionTypes,
+)
+
 from botbuilder.dialogs.prompts import (
     TextPrompt,
     NumberPrompt,
@@ -19,6 +34,9 @@ from botbuilder.dialogs.prompts import (
 from botbuilder.core import MessageFactory, UserState
 
 from azure.mgmt.resource import ResourceManagementClient
+from config import DefaultConfig
+
+CONFIG = DefaultConfig
 
 #passi utente carica il file, poi viene categorizzato dal servizio machine learning, (serve blob temporaneo)
 #dopo averlo caricato dialogo per inserire alcuni tag da stabilire, compressione cripto e cancellazione del file temporaneo.
@@ -35,12 +53,14 @@ class Upload_file_dialog(ComponentDialog):
         self.add_dialog(
             WaterfallDialog(
                 "WFUploadFile", [
-                    self.decide_upload, #decidere se carica un file oppure no
+                    self.step_select_storage,
+                    self.step_initial, 
                     self.upload,
                     self.step_category,#machine learning
-                    """
+                   
+                    
+                    #self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
                     self.step_choice, #scelta utente ok va WFDialogOption
-                    self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
                     ]
             )
         )
@@ -62,55 +82,112 @@ class Upload_file_dialog(ComponentDialog):
         )
         """
 
-        self.initial_dialog_id = "WFUploadFile"
+        self.step_select_storage = "WFUploadFile"
 
     
-    async def decide_upload(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+    async def step_select_storage(self, step_context: WaterfallStepContext) -> DialogTurnResult:
 
         await step_context.context.send_activity("....Sei nella sezione carica file... Inizia a caricare un file")
+        await step_context.context.send_activity("\n...Seleziona lo storage dove vuoi caricarlo...")
+        RG=step_context.values["RG"] 
+        iduser=step_context.context.activity.from_property.id
+        
+        """recupero lista storage account"""
+        list=DatabaseManager.getListStorageByID(iduser)
+        #Devo far selezionare storage account nuovo step
+        listselect=[]
+        for x in list:
+            object=CardAction(
+                type=ActionTypes.im_back,
+                title =x.getStorageName(),
+                value=x.getStorageName()
+            )
+            listselect.append(object)
+            
+        listselect.append(CardAction(
+                type=ActionTypes.im_back,
+                title ="Logout",
+                value="logout"
+            ))
+        
+        card = HeroCard(
+        text ="Ciao,seleziona lo storage. Per uscire digita quit o esci.",
+        buttons = listselect)
+        
+        return await step_context.prompt(
+            TextPrompt.__name__,
+            PromptOptions(
+                MessageFactory.attachment(CardFactory.hero_card(card))
+            ),
+        )
+        
+        
+    
+    async def step_initial(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        option=step_context.result
+
+        if option=="logout": 
+            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
+            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
+            await step_context.context.send_activity("Sei stato disconnesso.")
+            return await step_context.cancel_all_dialogs()
+            
+        else:
+            step_context.values["select_storage"] = option
+            
         return await step_context.prompt(
                AttachmentPrompt.__name__,
                 PromptOptions(
                     prompt=MessageFactory.text("......Inserisci il file da caricare.....oppure digita un messaggio per tornare indietro")
                 ),
             )
+        
+     
+       
+            
+    
+    
     
     async def upload(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         print("sto in upload")
         file = step_context.result[0]  #prelevo il file è un dict
 
         nome_blob = file.__dict__["name"] #prelevare il nome del file
-       
+        iduser=step_context.context.activity.from_property.id
+        RG=step_context.values["RG"]
+        NAMESTORAGE=step_context.values["select_storage"]
         
-        """recupero lo storage account"""
-        row = self.user.getStorageAccounteKey(step_context.context.activity.from_property.id) #riga 0 --> storage account , riga 1 account key
-
-        """processo di decifratura"""
-        crypto = Crypto()
-        cipher = row[1] #prelevo l'account key cifrato
-        plaintext = crypto.decrypt(cipher) #decifro
-        storage = Storage(row[0],plaintext)  #creo lo storage
-
+        #key
+        storagetemp= DatabaseManager.getStorageByNome(NAMESTORAGE)
+        
         """Connessione allo storage account"""
-        STORAGE_ACCOUNT_NAME = storage.getStorageName()
-        ACCOUNT_KEY = storage.getKeyStorage()
-        self.connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={ACCOUNT_KEY}"
+        ACCOUNT_KEY = storagetemp.getKeyStorageDecript()
+        self.connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
         blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
 
+        #modificare (id , storage accout selezionato) lista container
         container = Container()
-        name_container_temp = container.getContainerTempByNameStorage(STORAGE_ACCOUNT_NAME)
-    
-        blob_client = blob_service_client.get_blob_client(container=name_container_temp, blob=nome_blob) 
-        #controllare se ci sono dopppioni quidni effettuare un try catch
+        name_container_temp= DatabaseManager.getContainerbyName(NAMESTORAGE,RG+CONFIG.CONTAINER_BLOB_TEMP)
+        
+        try:
+            blob_client = blob_service_client.get_blob_client(container=name_container_temp, blob=nome_blob) 
+        except AttributeError:
+            await step_context.context.send_activity("....File duplicato....")
+            return await step_context.reprompt_dialog()
+        
+                
         blob_client.upload_blob_from_url(file.__dict__["content_url"]) #prelevo l'url per caricare il file nel blob
 
         await step_context.context.send_activity("....File caricato con successo nel container temporaneo.....")
         return await step_context.next(1)
 
+
+
     
     async def step_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         await step_context.context.send_activity("....Categorizziamo il file appena caricato.....")
-
+        
+        
 
 
 

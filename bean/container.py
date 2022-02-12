@@ -18,8 +18,8 @@ class Container:
    def getNameStorage(self,):
       return self.name_storage
    
-   def getContainerTempByNameStorage(self, name_storage: str):
-      return databaseManager.DatabaseManager.getContainerTempByNameStorage(name_storage)
+   def getContainerbyStorage(self, name_storage, nomeContainer: str):
+      return databaseManager.DatabaseManager.getContainerbyStorage(name_storage, nomeContainer)
 
       
       

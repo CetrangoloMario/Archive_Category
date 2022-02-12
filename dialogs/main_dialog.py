@@ -25,12 +25,13 @@ from botbuilder.schema._connector_client_enums import ActivityTypes
 from botbuilder.dialogs.dialog import Dialog
 from botbuilder.core import BotFrameworkAdapter
 from dialogs.upload_file_dialog import Upload_file_dialog
+from bean import *
 import os
 import json
 from typing import Dict
 
 registration_dialog = RegistrationDialog()
-carica_file_dialog  = Upload_file_dialog()
+upload_file_dialog  = Upload_file_dialog()
 
 class MainDialog(ComponentDialog):
     
@@ -38,7 +39,7 @@ class MainDialog(ComponentDialog):
         super(MainDialog, self).__init__(MainDialog.__name__)
         self.connection_name=connection_name
         self.registration_dialog_id=registration_dialog.id
-        self.carica_file_dialog = carica_file_dialog.id
+        self.upload_file_dialog = upload_file_dialog.id
       
     
         self.add_dialog(
@@ -68,7 +69,7 @@ class MainDialog(ComponentDialog):
         
         self.add_dialog(registration_dialog)
 
-        self.add_dialog(carica_file_dialog)
+        self.add_dialog(upload_file_dialog)
     
         self.add_dialog(
             WaterfallDialog(
@@ -107,6 +108,8 @@ class MainDialog(ComponentDialog):
                 return await step_context.begin_dialog(self.registration_dialog_id) 
             else:
                 #nome resource group (nomr archivio ) preleva da db
+                row= DatabaseManager.get_user(iduser)
+                step_context.values["RG"] = row[1]
                 await step_context.context.send_activity(MessageFactory.text('''Login effetuato'''))
                 return await step_context.next([])
         else:
@@ -165,7 +168,7 @@ class MainDialog(ComponentDialog):
 
         if option=="caricaFile":
             await step_context.context.send_activity("hai scelto caricafile")
-            return await step_context.begin_dialog(self.carica_file_dialog)
+            return await step_context.begin_dialog(self.upload_file_dialog)
 
         if option=="visualizzaFile":
             await step_context.context.send_activity("hai scelto visualizzafile")
