@@ -1,5 +1,7 @@
 
 from typing import List
+
+from grapheme import length
 import databaseManager
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
@@ -60,7 +62,7 @@ class Upload_file_dialog(ComponentDialog):
                    
                     
                     #self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
-                    self.step_choice, #scelta utente ok va WFDialogOption
+                    #self.step_choice, #scelta utente ok va WFDialogOption
                     ]
             )
         )
@@ -89,13 +91,21 @@ class Upload_file_dialog(ComponentDialog):
 
         await step_context.context.send_activity("....Sei nella sezione carica file... Inizia a caricare un file")
         await step_context.context.send_activity("\n...Seleziona lo storage dove vuoi caricarlo...")
-        RG=step_context.values["RG"] 
+       
         iduser=step_context.context.activity.from_property.id
+
+        user= DatabaseManager.get_user(iduser)
+        RG=user.getNomeRg
+        print (RG,"")
         
         """recupero lista storage account"""
         list=DatabaseManager.getListStorageByID(iduser)
         #Devo far selezionare storage account nuovo step
         listselect=[]
+        print(list,"lista")
+
+
+
         for x in list:
             object=CardAction(
                 type=ActionTypes.im_back,

@@ -1,7 +1,8 @@
 import re
 from bean.storage import Storage
 from typing import List
-import databaseManager
+
+
 class User:
     def __init__(self, id:str =None,nome_rg:str=None, list_storage: List = None ):
         self.id_user=id

@@ -108,8 +108,10 @@ class MainDialog(ComponentDialog):
                 return await step_context.begin_dialog(self.registration_dialog_id) 
             else:
                 #nome resource group (nomr archivio ) preleva da db
-                row= DatabaseManager.get_user(iduser)
-                step_context.values["RG"] = row[1]
+                loginuser = DatabaseManager.get_user(iduser)
+                if loginuser is not None:
+                    print(loginuser.getNomeRg)
+                    step_context.values["RG"] = loginuser.getNomeRg()
                 await step_context.context.send_activity(MessageFactory.text('''Login effetuato'''))
                 return await step_context.next([])
         else:

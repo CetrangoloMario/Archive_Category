@@ -1,6 +1,5 @@
 import re
 from typing import List
-import databaseManager
 from utilities import crypto
 class Storage:#si aggingono mano mano i tag .... tipo di compressione criptazione scelta.
 
