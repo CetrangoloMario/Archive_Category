@@ -71,7 +71,7 @@ class Upload_file_dialog(ComponentDialog):
         return await step_context.prompt(
                AttachmentPrompt.__name__,
                 PromptOptions(
-                    prompt=MessageFactory.text("......Inserisci il file da caricare.....")
+                    prompt=MessageFactory.text("......Inserisci il file da caricare.....oppure digita un messaggio per tornare indietro")
                 ),
             )
     
@@ -101,28 +101,34 @@ class Upload_file_dialog(ComponentDialog):
         name_container_temp = container.getContainerTempByNameStorage(STORAGE_ACCOUNT_NAME)
     
         blob_client = blob_service_client.get_blob_client(container=name_container_temp, blob=nome_blob) 
+        #controllare se ci sono dopppioni quidni effettuare un try catch
         blob_client.upload_blob_from_url(file.__dict__["content_url"]) #prelevo l'url per caricare il file nel blob
+
         await step_context.context.send_activity("....File caricato con successo nel container temporaneo.....")
         return await step_context.next(1)
 
     
     async def step_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        await step_context.context.send_activity("....Step machine learning.....")
-
-
-    
-
-    
+        await step_context.context.send_activity("....Categorizziamo il file appena caricato.....")
 
 
 
-    
+
+
+
+
+
+
+
+
+
     @staticmethod
     async def file_prompt_validator(prompt_context: PromptValidatorContext) -> bool:
         if not prompt_context.recognized.succeeded:
             await prompt_context.context.send_activity(
                 "....Non hai caricato nessun file..."
             )
+            #dovrebbe tornare al main dialog principale in caso in cui l'utente non vuole piu inserire il file
             # We can return true from a validator function even if recognized.succeeded is false.
             return True
         
