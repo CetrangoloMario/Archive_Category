@@ -1,6 +1,6 @@
 import re
 from typing import List
-from utilities import crypto
+from utilities.crypto import Crypto
 class Storage:#si aggingono mano mano i tag .... tipo di compressione criptazione scelta.
 
     def __init__(self, storage_account:str =None, account_key:str = None, id_user:str = None, pwd:str =None, list_container: List = None):
@@ -16,11 +16,12 @@ class Storage:#si aggingono mano mano i tag .... tipo di compressione criptazion
     def getKeyStorage(self):
         return self.key_storage
     
-    def getKeyStorageDecript(self):
-        return crypto.decrypt(self.key_storage) 
+    def getKeyStorageDecript(self,plaintext):
+        crypto = Crypto()
+        return crypto.decrypt(plaintext) 
     
-    def setKeyStorageDecript(self):
-        return crypto.crypt(self.key_storage)
+    def setKeyStorageDecript(self,):
+        return Crypto.crypt(self.key_storage)
     
 
     def getIdUserStorage(self):

@@ -5,7 +5,6 @@ import pyodbc
 from bean.storage import Storage
 from bean.user import User
 from bean.container import Container
-from bean.blob import Blob
 from typing import List
 from config import DefaultConfig
 
@@ -85,9 +84,9 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM utente WHERE idUser=?",id)
                 row = cursor.fetchone()
-                if len(row)<=0:
+                if len(row)>0:
                     user=User()
-                    user.id_user=str (row[0])
+                    user.id_user=str(row[0])
                     user.nome_rg=str(row[1])
                     user.list_storage=None
                     return user
@@ -208,7 +207,7 @@ class DatabaseManager:
                     storag.key_storage=str(row[1])
                     storag.id_user=str(row[2])
                     storag.pwd=str(row[3])
-                    
+                    return storag
         return None
 
 

@@ -95,7 +95,7 @@ class Upload_file_dialog(ComponentDialog):
         iduser=step_context.context.activity.from_property.id
 
         user= DatabaseManager.get_user(iduser)
-        RG=user.getNomeRg
+        RG=user.getNomeRg()
         print (RG,"")
         
         """recupero lista storage account"""
@@ -164,14 +164,15 @@ class Upload_file_dialog(ComponentDialog):
 
         nome_blob = file.__dict__["name"] #prelevare il nome del file
         iduser=step_context.context.activity.from_property.id
-        RG=step_context.values["RG"]
+        RG = databaseManager.DatabaseManager.get_user(iduser)
         NAMESTORAGE=step_context.values["select_storage"]
         
         #key
-        storagetemp= DatabaseManager.getStorageByNome(NAMESTORAGE)
+        storagetemp = DatabaseManager.getStorageByNome(NAMESTORAGE)
         
         """Connessione allo storage account"""
-        ACCOUNT_KEY = storagetemp.getKeyStorageDecript()
+    
+        ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
         self.connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
         blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
 
@@ -223,7 +224,7 @@ class Upload_file_dialog(ComponentDialog):
         valid_images = [
             attachment
             for attachment in attachments
-            if attachment.content_type in ["text/plain"]
+            if attachment.content_type in ["text/plain"] 
         ]
 
         prompt_context.recognized.value = valid_images

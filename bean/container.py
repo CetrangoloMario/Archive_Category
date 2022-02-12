@@ -1,6 +1,5 @@
 
 import re
-import databaseManager
 from typing import List
 
 
@@ -17,9 +16,7 @@ class Container:
    def getNameStorage(self,):
       return self.name_storage
    
-   def getContainerbyStorage(self, name_storage, nomeContainer: str):
-      return databaseManager.DatabaseManager.getContainerbyStorage(name_storage, nomeContainer)
-
+   
       
       
    
