@@ -4,7 +4,7 @@ import re
 import pyodbc
 from bean.storage import Storage
 from bean.user import User
-import bean.container as Container
+from bean.container import Container
 from bean.blob import Blob
 from typing import List
 from config import DefaultConfig
@@ -85,7 +85,7 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM utente WHERE idUser=?",id)
                 row = cursor.fetchone()
-                if len(row) is not None:
+                if len(row)<=0:
                     user=User()
                     user.id_user=str (row[0])
                     user.nome_rg=str(row[1])
@@ -101,7 +101,7 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM storage where iduser=?",iduser)
                 row = cursor.fetchone()
-                print("riga: ",row)
+                #print("riga: ",row)
 
                 if len(row)>0:
                     while row:
@@ -116,7 +116,7 @@ class DatabaseManager:
                     return list
 
                 
-                return list
+                
         return None
 
 
@@ -169,10 +169,16 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM container where nome_storage=?",name_storage)
                 row = cursor.fetchone()
-                if len(row) > 0:
-                    for x in row:
-                        list.append(Container(x[0],x[1]))
-                return list 
+                
+                if len(row)>0:
+                    while row:
+                        temp=Container()
+                        temp.name_container=str(row[0])
+                        temp.name_storage=str(row[1])
+                        row = cursor.fetchone()
+                        list.append(temp)
+                    return list
+                    
         return None
     
     @staticmethod
@@ -183,7 +189,9 @@ class DatabaseManager:
                 cursor.execute("SELECT * FROM container where nome_storage=? AND name=?",name_storage,nomeContainer)
                 row = cursor.fetchone()
                 if len(row) > 0:
-                    return Container(row[0],row[1]) 
+                    temp=Container()
+                    temp.name_container=str(row[0])
+                    temp.name_storage=str(row[1])    
         return None
 
 
@@ -195,7 +203,12 @@ class DatabaseManager:
                 cursor.execute("SELECT * FROM storage where name=?",nome)
                 row = cursor.fetchone()
                 if len(row) > 0:
-                    return Storage(row[0],row[1],row[2],row[3])
+                    storag=Storage()
+                    storag.storage_name=str(row[0])
+                    storag.key_storage=str(row[1])
+                    storag.id_user=str(row[2])
+                    storag.pwd=str(row[3])
+                    
         return None
 
 
