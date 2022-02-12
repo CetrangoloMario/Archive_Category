@@ -1,8 +1,11 @@
 from ast import For
+from queue import Empty
+import re
 import pyodbc
-from bean.container import Container
 from bean.storage import Storage
-from bean import user as User
+from bean.user import User
+import bean.container as Container
+from bean.blob import Blob
 from typing import List
 from config import DefaultConfig
 
@@ -80,10 +83,14 @@ class DatabaseManager:
         register = False
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT idUser, nomeRG INTO utente VALUES idUser",id)
+                cursor.execute("SELECT * FROM utente WHERE idUser=?",id)
                 row = cursor.fetchone()
                 if len(row) is not None:
-                    return row
+                    user=User()
+                    user.id_user=str (row[0])
+                    user.nome_rg=str(row[1])
+                    user.list_storage=None
+                    return user
         return None
     
     #tupla list storage , altrimenti restituisce None
@@ -94,9 +101,21 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM storage where iduser=?",iduser)
                 row = cursor.fetchone()
-                if len(row) > 0:
-                    for x in row:
-                        list.append(Storage(x[0],x[1],x[2],x[3]))
+                print("riga: ",row)
+
+                if len(row)>0:
+                    while row:
+                        storag=Storage()
+                        
+                        storag.storage_name=str(row[0])
+                        storag.key_storage=str(row[1])
+                        storag.id_user=str(row[2])
+                        storag.pwd=str(row[3])
+                        row=cursor.fetchone()
+                        list.append(storag)
+                    return list
+
+                
                 return list
         return None
 
@@ -143,7 +162,7 @@ class DatabaseManager:
         return register
     
     
-    
+    @staticmethod
     def getListContainerbyStorage(name_storage: str ):
         list=[]
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
@@ -152,11 +171,11 @@ class DatabaseManager:
                 row = cursor.fetchone()
                 if len(row) > 0:
                     for x in row:
-                        list.append(Container(*x))
+                        list.append(Container(x[0],x[1]))
                 return list 
         return None
     
-    
+    @staticmethod
     def getContainerbyName(name_storage: str, nomeContainer : str):
         
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
@@ -164,7 +183,7 @@ class DatabaseManager:
                 cursor.execute("SELECT * FROM container where nome_storage=? AND name=?",name_storage,nomeContainer)
                 row = cursor.fetchone()
                 if len(row) > 0:
-                    return Container(*row) 
+                    return Container(row[0],row[1]) 
         return None
 
 
@@ -176,7 +195,7 @@ class DatabaseManager:
                 cursor.execute("SELECT * FROM storage where name=?",nome)
                 row = cursor.fetchone()
                 if len(row) > 0:
-                    return Storage(*row)
+                    return Storage(row[0],row[1],row[2],row[3])
         return None
 
 
