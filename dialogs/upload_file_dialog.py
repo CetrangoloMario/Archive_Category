@@ -204,15 +204,6 @@ class Upload_file_dialog(ComponentDialog):
         
 
 
-
-
-
-
-
-
-
-
-
     @staticmethod
     async def file_prompt_validator(prompt_context: PromptValidatorContext) -> bool:
         if not prompt_context.recognized.succeeded:

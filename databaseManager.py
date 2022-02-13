@@ -2,6 +2,7 @@ from ast import For
 from queue import Empty
 import re
 import pyodbc
+from bean.blob import Blob
 from bean.storage import Storage
 from bean.user import User
 from bean.container import Container
@@ -211,8 +212,24 @@ class DatabaseManager:
                     storag.pwd=str(row[3])
                     return storag
         return None
-
-
-
+    
+    @staticmethod #
+    def getBlobByName(nome: str):
+        listblob=[]
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM blob where nomeblob=?",nome)
+                row = cursor.fetchone()
+                temp=Blob()
+                if len(row) > 0:
+                    while row:
+                        temp=Blob()
+                        temp.name=str(row[0])
+                        temp.name_container=str(row[1])
+                        temp.crypto=str(row[2])
+                        temp.compression=str(row[3])
+                        listblob.append(temp)
+                    return listblob         
+        return None
     
 

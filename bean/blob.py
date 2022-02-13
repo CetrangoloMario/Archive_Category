@@ -11,5 +11,16 @@ class Blob:
         self.crypto=crypto
         self.compression=compression
 
-
+    def getName(self):
+        return self.name
+    
+    def getNameContainer(self):
+        return self.name_container
+    def getCrypto(self):
+        return self.crypto
+    
+    def getCompression(self):
+        return self.compression
+    
+    
         

@@ -25,6 +25,7 @@ from botbuilder.schema._connector_client_enums import ActivityTypes
 from botbuilder.dialogs.dialog import Dialog
 from botbuilder.core import BotFrameworkAdapter
 from dialogs.upload_file_dialog import Upload_file_dialog
+from dialogs.view_file_dialog import View_file_dialog
 from bean import *
 import os
 import json
@@ -32,6 +33,7 @@ from typing import Dict
 
 registration_dialog = RegistrationDialog()
 upload_file_dialog  = Upload_file_dialog()
+view_file_dialog = View_file_dialog() 
 
 class MainDialog(ComponentDialog):
     
@@ -90,7 +92,7 @@ class MainDialog(ComponentDialog):
 
     async def prompt_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         welcome_card = self.create_welcome_card()
-        print("welcome card")
+        #print("welcome card")
         await step_context.context.send_activity(welcome_card)
         return await step_context.begin_dialog(OAuthPrompt.__name__)
         
@@ -174,7 +176,7 @@ class MainDialog(ComponentDialog):
 
         if option=="visualizzaFile":
             await step_context.context.send_activity("hai scelto visualizzafile")
-            return await step_context.begin_dialog(self.wishlist_dialog_id)
+            return await step_context.begin_dialog(self.view_file_dialog)
 
         if option=="logout": 
             bot_adapter: BotFrameworkAdapter = step_context.context.adapter
