@@ -170,23 +170,26 @@ class Upload_file_dialog(ComponentDialog):
         #key
         storagetemp = DatabaseManager.getStorageByNome(NAMESTORAGE)
         
-        """Connessione allo storage account"""
+  
+        
     
         ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
+
+        print("account key: ",ACCOUNT_KEY)
         self.connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
         blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
 
         #modificare (id , storage accout selezionato) lista container
         container = Container()
-        name_container_temp= DatabaseManager.getContainerbyName(NAMESTORAGE,RG+CONFIG.CONTAINER_BLOB_TEMP)
-        
+        print("nome rg: ",RG.getNomeRg())
+        name_container_temp= DatabaseManager.getContainerbyName(NAMESTORAGE,RG.getNomeRg()+CONFIG.CONTAINER_BLOB_TEMP)
+        print("nome container: ",name_container_temp.getNameContainer())
         try:
-            blob_client = blob_service_client.get_blob_client(container=name_container_temp, blob=nome_blob) 
+            blob_client = blob_service_client.get_blob_client(container=name_container_temp.getNameContainer(), blob=nome_blob) 
         except AttributeError:
             await step_context.context.send_activity("....File duplicato....")
             return await step_context.reprompt_dialog()
         
-                
         blob_client.upload_blob_from_url(file.__dict__["content_url"]) #prelevo l'url per caricare il file nel blob
 
         await step_context.context.send_activity("....File caricato con successo nel container temporaneo.....")

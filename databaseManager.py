@@ -190,8 +190,10 @@ class DatabaseManager:
                 if len(row) > 0:
                     temp=Container()
                     temp.name_container=str(row[0])
-                    temp.name_storage=str(row[1])    
-        return None
+                    temp.name_storage=str(row[1])
+                    return temp
+                else:
+                    return None
 
 
     @staticmethod
