@@ -1,5 +1,7 @@
 
 from typing import List
+from unicodedata import name
+from aiohttp import request
 
 from grapheme import length
 import databaseManager
@@ -34,7 +36,10 @@ from botbuilder.dialogs.prompts import (
     PromptValidatorContext,
 )
 from botbuilder.core import MessageFactory, UserState
+import http.client, urllib.request, urllib.parse, urllib.error, base64
+import requests 
 
+from utilities.classificatordocument import ClassificatorDocument
 from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
 
@@ -163,6 +168,9 @@ class Upload_file_dialog(ComponentDialog):
         file = step_context.result[0]  #prelevo il file è un dict
 
         nome_blob = file.__dict__["name"] #prelevare il nome del file
+        print("Nome blob: ",nome_blob)
+        step_context.values["name-blob"] = nome_blob #salvo in sessione
+
         iduser=step_context.context.activity.from_property.id
         RG = databaseManager.DatabaseManager.get_user(iduser)
         NAMESTORAGE=step_context.values["select_storage"]
@@ -170,29 +178,26 @@ class Upload_file_dialog(ComponentDialog):
         #key
         storagetemp = DatabaseManager.getStorageByNome(NAMESTORAGE)
         
-  
-        
-    
         ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
 
-        print("account key: ",ACCOUNT_KEY)
         self.connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
-        blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
+        self.blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
 
         #modificare (id , storage accout selezionato) lista container
-        container = Container()
-        print("nome rg: ",RG.getNomeRg())
         name_container_temp= DatabaseManager.getContainerbyName(NAMESTORAGE,RG.getNomeRg()+CONFIG.CONTAINER_BLOB_TEMP)
-        print("nome container: ",name_container_temp.getNameContainer())
+        step_context.values["name-container"] = name_container_temp.getNameContainer()
         try:
-            blob_client = blob_service_client.get_blob_client(container=name_container_temp.getNameContainer(), blob=nome_blob) 
+            blob_client = self.blob_service_client.get_blob_client(container=name_container_temp.getNameContainer(), blob=nome_blob) 
         except AttributeError:
             await step_context.context.send_activity("....File duplicato....")
             return await step_context.reprompt_dialog()
-        
+        print("url: ",file.__dict__["content_url"])
         blob_client.upload_blob_from_url(file.__dict__["content_url"]) #prelevo l'url per caricare il file nel blob
+        #inserimento del file nel database
+        print("inserito nel blob")
 
         await step_context.context.send_activity("....File caricato con successo nel container temporaneo.....")
+
         return await step_context.next(1)
 
 
@@ -200,7 +205,20 @@ class Upload_file_dialog(ComponentDialog):
     
     async def step_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         await step_context.context.send_activity("....Categorizziamo il file appena caricato.....")
+        container = step_context.values["name-container"]
+        blob = step_context.values["name-blob"]
+        print("container: ",container)
+        print("blob: ",blob)
+        blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
+        with open("./utilities/BlockDestination.txt", "wb") as my_blob:
+                download_stream = blob_client.download_blob()
+                my_blob.write(download_stream.readall())
+        #myblob deve essere passato al machine learnig
+        classificator = ClassificatorDocument()
+        classificator.classificatorcategory(my_blob)
         
+        
+
         
 
 

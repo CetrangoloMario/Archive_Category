@@ -89,8 +89,11 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
                 utente = User(iduser,rg,listaStorage)
                 DatabaseManager.insert_user(utente)
                 if not DatabaseManager.insert_storage(storage): #inserimento storage nel database
-                    #delete dati database errore query inserimento
                     DatabaseManager.delete_storage(storage)
+
+                container_temp = Container(rg+CONFIG.CONTAINER_BLOB_TEMP,storage.getStorageName()) #creo container temporaneo
+                DatabaseManager.insert_container(container_temp) #inserisco nel db
+
                 await step_context.context.send_activity("Registrazione Completata !!!")
                 return await step_context.end_dialog()
                 #step_context.values["utente"] = utente
@@ -163,11 +166,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         if container is None:
             return None
 
-        """ripetere per ogni categoria e inserisco nel database"""
-        
-        container_temp = Container(CONTAINER_NAME,STORAGE_ACCOUNT_NAME) #creo container temporaneo
-        DatabaseManager.insert_container(container_temp) #inserisco nel db
-
+        """ripetere per ogni categoria """
 
 
         """cifrare l'account key"""

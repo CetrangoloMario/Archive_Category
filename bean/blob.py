@@ -1,7 +1,6 @@
 import re
 from xmlrpc.client import Boolean
 from bean.storage import Storage
-import databaseManager
 from typing import List
 
 class Blob:

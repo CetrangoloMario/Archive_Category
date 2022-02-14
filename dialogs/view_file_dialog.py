@@ -16,7 +16,7 @@ from botbuilder.dialogs.prompts import TextPrompt, PromptOptions, ChoicePrompt
 from botbuilder.core import MessageFactory, TurnContext, CardFactory, UserState
 from botbuilder.schema import Attachment, InputHints, SuggestedActions
 from botbuilder.dialogs.choices import Choice
-from .main_dialog import MainDialog
+#from .main_dialog import MainDialog
     
 from botbuilder.schema import (
     ChannelAccount,
@@ -41,7 +41,7 @@ from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
 
 CONFIG = DefaultConfig
-main_dialog=MainDialog()
+#main_dialog=MainDialog()
 
 """ chiedere all'utente il nome del file da visualizzare, altrimenti percoso storage account select
 container select, stampo la lista dei nomi dei blob"""
@@ -93,7 +93,7 @@ class View_file_dialog(ComponentDialog):
         elif len(listFile)<2:
             await step_context.context.send_activity(" File trovato un solo elemento")
             #funzione download file
-            return await step_context.begin_dialog(main_dialog.begin_dialog("WFDialog"))
+            #return await step_context.begin_dialog(main_dialog.begin_dialog("WFDialog"))
         
         step_context.values["listFile"]=listFile
         

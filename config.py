@@ -17,6 +17,17 @@ class DefaultConfig:
     APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "AtLeastSixteenCharacters_0")
     CONNECTION_NAME = os.environ.get("ConnectionName", "ManlioConnection2")
 
+
+    """dati per il classificatore"""
+    AZURE_TEXT_ANALYTICS_ENDPOINT = os.environ.get("AZURE_TEXT_ANALYTICS_ENDPOINT","https://westeurope.api.cognitive.microsoft.com/")
+    AZURE_TEXT_ANALYTICS_KEY = os.environ.get("AZURE_TEXT_ANALYTICS_KEY","6219ebc9404a4bb698b9bcb55da134f5")
+    MULTI_CATEGORY_CLASSIFY_PROJECT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_PROJECT_NAME","classificatordocument")
+    MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME","trainingcategory")
+
+
+
+
+
     #dati per crittografare il db utilizzaimo l'algoritmo AES (CTR Block Mode)
     SECRET_PASSWORD = "manliokey" #settare secret key in azure
     SECRET_PASSWORD_SALT = "8" #os.urandom(16) 

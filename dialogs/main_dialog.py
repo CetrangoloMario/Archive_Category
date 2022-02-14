@@ -33,7 +33,7 @@ from typing import Dict
 
 registration_dialog = RegistrationDialog()
 upload_file_dialog  = Upload_file_dialog()
-view_file_dialog = View_file_dialog() 
+#view_file_dialog = View_file_dialog() 
 
 class MainDialog(ComponentDialog):
     
@@ -176,7 +176,7 @@ class MainDialog(ComponentDialog):
 
         if option=="visualizzaFile":
             await step_context.context.send_activity("hai scelto visualizzafile")
-            return await step_context.begin_dialog(self.view_file_dialog)
+            #return await step_context.begin_dialog(self.view_file_dialog)
 
         if option=="logout": 
             bot_adapter: BotFrameworkAdapter = step_context.context.adapter

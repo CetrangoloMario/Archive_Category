@@ -1,4 +1,5 @@
 from ast import For
+from pickle import TRUE
 from queue import Empty
 import re
 import pyodbc
@@ -49,16 +50,15 @@ class DatabaseManager:
 
     @staticmethod
     def insert_storage(storage: Storage):
-        register = False
+        register = True
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
-
                 try:
                     cursor.execute("INSERT INTO storage VALUES (?,?,?,?)",storage.getStorageName(),storage.getKeyStorage(), storage.getIdUserStorage(), storage.getPwd())
                 except pyodbc.IntegrityError:
-                        pass
-                register=True
-                #row = cursor.fetchone() 
+                    print("integrity error")
+                    register=False
+                    return register
         return register
 
     
@@ -126,7 +126,7 @@ class DatabaseManager:
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
-                    cursor.execute("Delete INTO storage Where name=?", arc.getStorageName)
+                    cursor.execute("Delete storage Where name=?", arc.getStorageName)
                     register=True
                 except Exception:
                     register=False
@@ -150,14 +150,15 @@ class DatabaseManager:
     
     @staticmethod
     def insert_container(container: Container):
-        register = False
+        register = True
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
                     cursor.execute("INSERT INTO container VALUES (?,?)",container.getNameContainer(),container.getNameStorage())
                 except pyodbc.IntegrityError:
-                        pass
-                register=True
+                    register=False
+                    print("integrity error")
+                    return register
                 #row = cursor.fetchone() 
         return register
     
