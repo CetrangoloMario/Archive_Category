@@ -149,8 +149,8 @@ class MainDialog(ComponentDialog):
             ),
             CardAction(
                 type=ActionTypes.im_back,
-                title ="Visualizza File",
-                value="visualizzaFile"
+                title ="Scarica File",
+                value="scaricaFile"
             )
         ],   
         )
@@ -174,9 +174,9 @@ class MainDialog(ComponentDialog):
             await step_context.context.send_activity("hai scelto caricafile")
             return await step_context.begin_dialog(self.upload_file_dialog)
 
-        if option=="visualizzaFile":
+        if option=="scaricaFile":
             await step_context.context.send_activity("hai scelto visualizzafile")
-            #return await step_context.begin_dialog(self.view_file_dialog)
+            return await step_context.begin_dialog(self.view_file_dialog)
 
         if option=="logout": 
             bot_adapter: BotFrameworkAdapter = step_context.context.adapter

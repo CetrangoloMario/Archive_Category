@@ -116,7 +116,6 @@ class DatabaseManager:
                     return list
 
                 
-                
         return None
 
 
