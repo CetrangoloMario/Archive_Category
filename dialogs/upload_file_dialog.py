@@ -1,6 +1,6 @@
 
 from typing import List
-from unicodedata import name
+from unicodedata import category, name
 from aiohttp import request
 
 from grapheme import length
@@ -64,15 +64,15 @@ class Upload_file_dialog(ComponentDialog):
                     self.step_initial, 
                     self.upload,
                     self.step_category,#machine learning
-                   
-                    
-                    #self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
-                    #self.step_choice, #scelta utente ok va WFDialogOption
+                    self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
+                    self.step_choice, #scelta utente ok va WFDialogOption
                     ]
             )
         )
 
         self.add_dialog(AttachmentPrompt(AttachmentPrompt.__name__,Upload_file_dialog.file_prompt_validator))   #prendere il file in input
+        self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__)) #prende la risposta dell'utente si o no
+        self.add_dialog(TextPrompt(TextPrompt.__name__)) #chiedere l'input all'utente 
 
 
 
@@ -210,12 +210,43 @@ class Upload_file_dialog(ComponentDialog):
         print("container: ",container)
         print("blob: ",blob)
         blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
-        with open("./utilities/BlockDestination.txt", "wb") as my_blob:
+        with open("./utilities/BlockDestination.txt", "wb") as my_blob: #salvo tutto nel file txt temporaneo
                 download_stream = blob_client.download_blob()
                 my_blob.write(download_stream.readall())
         #myblob deve essere passato al machine learnig
         classificator = ClassificatorDocument()
-        classificator.classificatorcategory(my_blob)
+        category, score = classificator.classificatorcategory() #elabora sul txt temporaneo ./utilities/BlockDestination.txt
+        score = 100*score #per avere la percentuale da 0 a 100
+        step_context.values["category"] = category
+        await step_context.context.send_activity("il file appena caricato è stato categorizzato con la categoria: "+category)
+        return await step_context.prompt(
+               ConfirmPrompt.__name__,
+                PromptOptions(
+                    prompt=MessageFactory.text("Per lei conferma questa categoria(digita Yes) oppure vuoi creare una nuova (digita No) ??")
+                ),
+            )
+    
+
+    
+    async def step_choice_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        risposta = step_context.result
+        category = step_context.values["category"]
+        if risposta == "Yes":     #inserire il file nella categoria scelta dal classificatore
+            step_context.values["risposta"] = "yes"
+            step_context.next(1)
+        else:                     #l'utente deve creare una nuova categoria
+            return await step_context.prompt(
+               TextPrompt.__name__,
+                PromptOptions(
+                    prompt=MessageFactory.text("Dimmi il nome della nuova categoria dove inserire il file ?")
+                ),
+            )
+    
+    async def step_choice(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        pass
+       
+       
+
         
         
 

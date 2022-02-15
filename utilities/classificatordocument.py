@@ -3,9 +3,9 @@ from azure.core.credentials import AzureKeyCredential
 from azure.ai.textanalytics import (
         TextAnalyticsClient,
         MultiCategoryClassifyAction
-    )
 
-f
+    )
+import os
 
 
 
@@ -26,11 +26,21 @@ class ClassificatorDocument():
         return text_analytics_client
     
 
-    def classificatorcategory(self,file):
 
-        document = [file.read]
-        
-        print("document: ",document)
+    """ritorna una tupla [categoria, score]"""
+    def classificatorcategory(self):
+
+        path_to_sample_document = os.path.abspath(
+        os.path.join(
+            os.path.abspath(__file__),
+            "..",
+            "./BlockDestination.txt",
+        )
+        )
+
+
+        with open(path_to_sample_document) as fd:
+            document = [fd.read()]
 
         poller = self.client.begin_analyze_actions(
         document,
@@ -41,18 +51,14 @@ class ClassificatorDocument():
             ),
         ],
     )
-        print("poller dopo")
 
         document_results = poller.result()
         for doc, classification_results in zip(document, document_results):
             for classification_result in classification_results:
                 if not classification_result.is_error:
                     classifications = classification_result.classifications
-                    print(f"\nThe document plot '{doc}' was classified as the following genres:\n")
                     for classification in classifications:
-                        print("'{}' with confidence score {}.".format(
-                        classification.category, classification.confidence_score
-                        ))
+                        return [classification.category, classification.confidence_score]
                 else:
                     print("document plot '{}' has an error with code '{}' and message '{}'".format(
                     doc, classification_result.code, classification_result.message

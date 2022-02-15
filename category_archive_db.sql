@@ -1,4 +1,4 @@
-use schema Categoryarchivedb
+use Archivecategorydb;
 
 create table utente (
   idUser varchar(100) not null constraint user_pk primary key nonclustered,
@@ -16,8 +16,10 @@ create table storage (
 go
 create table container (
   name varchar(30) not null constraint container_pk primary key nonclustered,
-  nome_storage varchar(50) not null unique,
+  nome_storage varchar(50) not null,
+  unique(name,nome_storage),
   CONSTRAINT FK_nome_storage_storage FOREIGN KEY (nome_storage) REFERENCES storage (name) ON UPDATE CASCADE ON DELETE CASCADE
+  
 ) 
 go
 create table blob (

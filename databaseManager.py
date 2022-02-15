@@ -162,6 +162,30 @@ class DatabaseManager:
                 #row = cursor.fetchone() 
         return register
     
+    @staticmethod
+    def inser_container_multiple(containers : list, name_storage):
+        register = True
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                #try:
+                    cursor.execute("INSERT INTO container VALUES (?,?) , (?,?) , (?,?) , (?,?) , (?,?), (?,?)",
+                    
+                        containers[0],name_storage, #container temporaneo
+                        containers[1],name_storage, #container businesss
+                        containers[2],name_storage, #container enternainemnt
+                        containers[3],name_storage, #container politcs
+                        containers[4],name_storage, #container sport
+                        containers[5],name_storage,  #container tech
+                    )
+                #except pyodbc.IntegrityError:
+                    register=False
+                    print("integrity error contanier multiple")
+                    return register
+                #row = cursor.fetchone() 
+        return register
+
+
+    
     
     @staticmethod
     def getListContainerbyStorage(name_storage: str ):
