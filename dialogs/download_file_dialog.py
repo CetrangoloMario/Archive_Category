@@ -43,7 +43,7 @@ from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
 
 CONFIG = DefaultConfig
-main_dialog=MainDialog()
+#main_dialog=MainDialog()
 
 """passi sono utente digita il nome o deve selezionare storage acount, da li può selezionare un container e visualizza tutti i file, o seleziona il file o deve toranere alla visualizza container, che gli potrebbe permettere visualizza storage
  MC: capitò io volevo sapere se quando faccio scorrere fllusso ivece di fa spep.contest.next posso fare step begin (WFdialogView. funzionedello step)
@@ -150,7 +150,7 @@ class Download_file_dialog(ComponentDialog):
         elif len(listFile)<2:
             await step_context.context.send_activity(" File trovato un solo elemento")
             #funzione download
-            return await step_context.begin_dialog(main_dialog.begin_dialog("WFDialog"))
+            #return await step_context.begin_dialog(main_dialog.begin_dialog("WFDialog"))
         
         
         # Step successivo quando si estende al possesso di più storage account e poi alla condivisione dei file 

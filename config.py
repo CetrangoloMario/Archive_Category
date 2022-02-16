@@ -24,6 +24,9 @@ class DefaultConfig:
     MULTI_CATEGORY_CLASSIFY_PROJECT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_PROJECT_NAME","classificatordocument")
     MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME","prod")
 
+    """dati per il servizio di traduzione"""
+    AZURE_TRANSLATION_KEY = os.environ.get("AZURE_TRANSLATION_KEY","1a18d666c0094f65836f2c9dc326cda2")
+
 
 
 

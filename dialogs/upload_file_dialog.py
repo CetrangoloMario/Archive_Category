@@ -1,4 +1,5 @@
 
+from distutils.command.config import config
 from typing import List
 from unicodedata import category, name
 from aiohttp import request
@@ -37,7 +38,10 @@ from botbuilder.dialogs.prompts import (
 )
 from botbuilder.core import MessageFactory, UserState
 import http.client, urllib.request, urllib.parse, urllib.error, base64
-import requests 
+import requests
+from datetime import datetime, timedelta
+from azure.storage.blob import ResourceTypes, generate_blob_sas,BlobSasPermissions
+
 
 from utilities.classificatordocument import ClassificatorDocument
 from azure.mgmt.resource import ResourceManagementClient
@@ -65,7 +69,8 @@ class Upload_file_dialog(ComponentDialog):
                     self.upload,
                     self.step_category,#machine learning
                     self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
-                    self.step_choice, #scelta utente ok va WFDialogOption
+                    self.step_choice, #scelta utente ok va a WFDialogOption altrimenti va nello step successivo
+                    self.step_create_container #l'utente crea il nuovo container
                     ]
             )
         )
@@ -76,18 +81,18 @@ class Upload_file_dialog(ComponentDialog):
 
 
 
-        """
+        
         self.add_dialog(
             WaterfallDialog(
                 "WFDialogOption", [
                     self.step_traduction,
                     self.step_compression,
-                    self.step_crypto,
-                    self.step_final  #salva nel container scelto e cancella quelli temporanei.
+                    #self.step_crypto,
+                    #self.step_final  #salva nel container scelto e cancella quelli temporanei.
                     ]
             )
         )
-        """
+        
 
         self.step_select_storage = "WFUploadFile"
 
@@ -206,19 +211,19 @@ class Upload_file_dialog(ComponentDialog):
     async def step_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         await step_context.context.send_activity("....Categorizziamo il file appena caricato.....")
         container = step_context.values["name-container"]
+        self.container = container #salvo in una variabile d'istanza il nome del container temporaneo
         blob = step_context.values["name-blob"]
-        print("container: ",container)
-        print("blob: ",blob)
+        self.blob = blob #salvo in una variabile d'istanza il nome del file inserito
         blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
         with open("./utilities/BlockDestination.txt", "wb") as my_blob: #salvo tutto nel file txt temporaneo
                 download_stream = blob_client.download_blob()
                 my_blob.write(download_stream.readall())
         #myblob deve essere passato al machine learnig
         classificator = ClassificatorDocument()
-        category, score = classificator.classificatorcategory() #elabora sul txt temporaneo ./utilities/BlockDestination.txt
+        self.category, score = classificator.classificatorcategory() #elabora sul txt temporaneo ./utilities/BlockDestination.txt
         score = 100*score #per avere la percentuale da 0 a 100
-        step_context.values["category"] = category
-        await step_context.context.send_activity("il file appena caricato è stato categorizzato con la categoria: "+category)
+        #step_context.values["category"] = category
+        await step_context.context.send_activity("il file appena caricato è stato categorizzato con la categoria: "+self.category)
         return await step_context.prompt(
                ConfirmPrompt.__name__,
                 PromptOptions(
@@ -230,21 +235,157 @@ class Upload_file_dialog(ComponentDialog):
     
     async def step_choice_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         risposta = step_context.result
-        category = step_context.values["category"]
-        if risposta == "Yes":     #inserire il file nella categoria scelta dal classificatore
+        nome_storage = step_context.values["select_storage"]
+        if risposta == True:     #inserire il file nella categoria scelta dal classificatore
             step_context.values["risposta"] = "yes"
-            step_context.next(1)
-        else:                     #l'utente deve creare una nuova categoria
+            return await step_context.next(1)
+        else:   #l'utente deve creare una nuova categoria oppure selezione una container gia esistente
+            step_context.values["risposta"] = "no"
+            listaContainers = DatabaseManager.getContainerByNameStorage(nome_storage)  #prelevo tutti i container esistenti
+            listselect = []
+            for x in listaContainers:
+                print("x: ",x)
+                object=CardAction(
+                    type=ActionTypes.im_back,
+                    title =x,
+                    value=x
+                )
+                listselect.append(object)
+            
+            listselect.append(CardAction(
+                type=ActionTypes.im_back,
+                title ="New container",
+                value="newContainer"
+                ))
+        
+            card = HeroCard(
+                     text ="Ciao,seleziona le categorie esistenti oppure creare una nuova.",
+                     buttons = listselect)
+        
             return await step_context.prompt(
+                TextPrompt.__name__,
+                PromptOptions(
+                MessageFactory.attachment(CardFactory.hero_card(card))
+                ),
+            )
+
+
+           
+
+    
+    async def step_choice(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        option=step_context.result  #la scelta dell'utente
+
+        if(option=="newContainer"):
+             return await step_context.prompt(
                TextPrompt.__name__,
                 PromptOptions(
-                    prompt=MessageFactory.text("Dimmi il nome della nuova categoria dove inserire il file ?")
+                    prompt=MessageFactory.text("Inserisce il nome della nuova categoria ??")
+                ),
+                )
+        else:
+            category = step_context.result
+            if(step_context.values["risposta"] == "yes"):  #se l'utente digita yes sopra allora prendo la categoria salvata come variabili d'istanza la categoria scelta dal classificatore 
+                await step_context.context.send_activity("Hai Confermato la categoria predetta: "+self.category)
+                return await step_context.begin_dialog("WFDialogOption")
+            else: #altrimenti devo aggiornare la variabile d'istanza e mettere la categoria selezionata dall'utente
+                self.category = category
+                await step_context.context.send_activity("Hai selezionato la categoria: "+self.category)
+                return await step_context.begin_dialog("WFDialogOption")
+    
+    async def step_create_container(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        nome_categoria = step_context.result
+        await step_context.context.send_activity("Creiamo la nuova categoria: "+nome_categoria)
+        #inserire nel db la nuova categoria (controllare lerrore nel caso in cui la categoria inserita già esiste)
+        container = Container(nome_categoria,step_context.values["select_storage"])
+        DatabaseManager.insert_container(container)
+        #creare anche nello storage account la categoria
+        self.blob_service_client.create_container(nome_categoria)
+        await step_context.context.send_activity("Hai creato la nuova categoria")
+        self.category = nome_categoria #salvo la nuoca categoria creata
+        #passare allo step successivo WFDialogOption
+        return await step_context.begin_dialog("WFDialogOption")
+
+    async def step_traduction(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        return await step_context.prompt(
+               TextPrompt.__name__,
+                PromptOptions(
+                    prompt=MessageFactory.text("il file appena caricato vuoi tradurre (inserisci la lingua) oppure digita No??")
                 ),
             )
     
-    async def step_choice(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        pass
+    async def step_compression(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        lingua = step_context.result
+        print("lingua: ",lingua)
+        #se option devo passare allo steo successuvi chiededno la compressione altrimento devo effettuare la traduzione del file
+        if lingua == "no" or lingua == "No":
+            print("no traduzione")
+        else:
+            #prelevo il file nel blob temporaneo
+            print("hai scelto la traduzione")
+            container = self.container
+            blob = self.blob
+            print("container: ",container)
+            print("blob: ",blob)
+            blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
+            #creare il servizio di traduzione
+            sas_blob = generate_blob_sas(account_name=blob_client.account_name, 
+                                container_name=container,
+                                blob_name=blob,
+                                account_key=blob_client.credential.account_key,
+                                permission=BlobSasPermissions(read=True),
+                                expiry=datetime.utcnow() + timedelta(hours=1))
+
+            url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+container+'/'+blob+'?'+sas_blob
+
+            print("url: ",url)
+
+
+            endpoint = "https://tranlatorbot.cognitiveservices.azure.com/translator/text/batch/v1.0"
+            subscriptionKey = CONFIG.AZURE_TRANSLATION_KEY
+            path = '/batches'
+            constructed_url = endpoint + path
+
+            payload = {
+    "inputs": [
+        {
+            "storageType": "File",
+            "source": {
+                "sourceUrl": url
+            },
+            "targets": [
+                {
+                    "targetUrl": url,
+                    "language": lingua
+                }
+            ]
+        }
+    ]
+}
+
+        headers = {
+        'Ocp-Apim-Subscription-Key': subscriptionKey,
+        'Content-Type': 'application/json'
+        }
+
+        response = requests.post(constructed_url, headers=headers, json=payload)
+        print(f'response status code: {response.status_code}\nresponse status: {response.reason}\nresponse headers: {response.headers}')
+
+
+
+
+
+
+      
        
+            
+        
+            
+
+
+
+               
+
        
 
         

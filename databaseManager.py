@@ -106,7 +106,6 @@ class DatabaseManager:
                 if len(row)>0:
                     while row:
                         storag=Storage()
-                        
                         storag.storage_name=str(row[0])
                         storag.key_storage=str(row[1])
                         storag.id_user=str(row[2])
@@ -255,5 +254,23 @@ class DatabaseManager:
                         listblob.append(temp)
                     return listblob         
         return None
+    
+    @staticmethod 
+    def getContainerByNameStorage(name_storage: str):
+        listNomeContainer=[]
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT name FROM container where nome_storage=?",name_storage)
+                row = cursor.fetchone()
+                print("row: ",row)
+                if len(row) > 0:
+                    while row:
+                        listNomeContainer.append(row[0])
+                        row = cursor.fetchone()
+        print("lista nome contaoner: ",listNomeContainer)  
+        return listNomeContainer
+
+
+
     
 
