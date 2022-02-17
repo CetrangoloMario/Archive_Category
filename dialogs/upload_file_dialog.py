@@ -1,5 +1,6 @@
 
 from distutils.command.config import config
+from fnmatch import translate
 from typing import List
 from unicodedata import category, name
 from aiohttp import request
@@ -41,6 +42,7 @@ import http.client, urllib.request, urllib.parse, urllib.error, base64
 import requests
 from datetime import datetime, timedelta
 from azure.storage.blob import ResourceTypes, generate_blob_sas,BlobSasPermissions
+import requests, uuid, json
 
 
 from utilities.classificatordocument import ClassificatorDocument
@@ -87,8 +89,8 @@ class Upload_file_dialog(ComponentDialog):
                 "WFDialogOption", [
                     self.step_traduction,
                     self.step_compression,
-                    #self.step_crypto,
-                    #self.step_final  #salva nel container scelto e cancella quelli temporanei.
+                    self.step_crypto,
+                    self.step_final  #salva nel container scelto e cancella quelli temporanei.
                     ]
             )
         )
@@ -310,7 +312,7 @@ class Upload_file_dialog(ComponentDialog):
         return await step_context.prompt(
                TextPrompt.__name__,
                 PromptOptions(
-                    prompt=MessageFactory.text("il file appena caricato vuoi tradurre (inserisci la lingua) oppure digita No??")
+                    prompt=MessageFactory.text("il file appena caricato vuoi tradurre (inserisci il codice lingua ad esempio italiano --> it) oppure digita No??") #aggiungere il controllo sul codice lingua
                 ),
             )
     
@@ -319,58 +321,46 @@ class Upload_file_dialog(ComponentDialog):
         print("lingua: ",lingua)
         #se option devo passare allo steo successuvi chiededno la compressione altrimento devo effettuare la traduzione del file
         if lingua == "no" or lingua == "No":
-            print("no traduzione")
+            return await step_context.prompt(
+               ConfirmPrompt.__name__,
+                PromptOptions(
+                    prompt=MessageFactory.text("Non hai scelto la traduzione.... Desidera comprimere il file  (digita Yes o No)??") #aggiungere il controllo sul codice lingua
+                ),
+            )
         else:
-            #prelevo il file nel blob temporaneo
-            print("hai scelto la traduzione")
-            container = self.container
-            blob = self.blob
-            print("container: ",container)
-            print("blob: ",blob)
-            blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
-            #creare il servizio di traduzione
-            sas_blob = generate_blob_sas(account_name=blob_client.account_name, 
-                                container_name=container,
-                                blob_name=blob,
-                                account_key=blob_client.credential.account_key,
-                                permission=BlobSasPermissions(read=True),
-                                expiry=datetime.utcnow() + timedelta(hours=1))
+            #prelevo il testo salvato nel file txt temporaneo 
+            with open("./utilities/BlockDestination.txt","r") as fd:
+                text = fd.read()
+            """prelevare il testo tradotto e metterlo nel blob temporaneo insieme al file di partenza"""
+            text_translate = self.translate(lingua,text)
+            blob_client = self.blob_service_client.get_blob_client(container=self.container, blob="translate-"+self.blob)
+            blob_client.upload_blob(text_translate)
+            return await step_context.prompt(
+               ConfirmPrompt.__name__,
+                PromptOptions(
+                    prompt=MessageFactory.text("Desidera comprimere il file (digita Yes o No)?") #aggiungere il controllo sul codice lingua
+                ),
+            )
+        
 
-            url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+container+'/'+blob+'?'+sas_blob
+    async def step_crypto(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        scelta = step_context.result
+        if scelta == False:
+            #chiedi se l'utente vuole effettuare la criptazione
+            pass
+        else:
+            #effettua la compressione del file
+            pass
 
-            print("url: ",url)
 
-
-            endpoint = "https://tranlatorbot.cognitiveservices.azure.com/translator/text/batch/v1.0"
-            subscriptionKey = CONFIG.AZURE_TRANSLATION_KEY
-            path = '/batches'
-            constructed_url = endpoint + path
-
-            payload = {
-    "inputs": [
-        {
-            "storageType": "File",
-            "source": {
-                "sourceUrl": url
-            },
-            "targets": [
-                {
-                    "targetUrl": url,
-                    "language": lingua
-                }
-            ]
-        }
-    ]
-}
-
-        headers = {
-        'Ocp-Apim-Subscription-Key': subscriptionKey,
-        'Content-Type': 'application/json'
-        }
-
-        response = requests.post(constructed_url, headers=headers, json=payload)
-        print(f'response status code: {response.status_code}\nresponse status: {response.reason}\nresponse headers: {response.headers}')
-
+    async def step_final(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        scelta = step_context.result
+        if scelta == False:
+            #inserimo del file nel contenitore scelta dall'utente
+            pass
+        else:
+            #effettua la criptazione del file e l'inserimento del file nel contenitore (categoria) scelta dall'utente
+            pass
 
 
 
@@ -413,6 +403,46 @@ class Upload_file_dialog(ComponentDialog):
 
         prompt_context.recognized.value = valid_images
         return len(valid_images) > 0 
+
+    
+    @staticmethod
+    def translate(lingua, text):
+        # Add your subscription key and endpoint
+        subscription_key = CONFIG.AZURE_TRANSLATION_KEY
+        endpoint = "https://api.cognitive.microsofttranslator.com"
+
+        # Add your location, also known as region. The default is global.
+        #This is required if using a Cognitive Services resource.
+        location = "westeurope"
+
+        path = '/translate'
+        constructed_url = endpoint + path
+
+        params = {
+                'api-version': '3.0',
+                'to': lingua
+            }
+
+        constructed_url = endpoint + path
+
+        headers = {
+                'Ocp-Apim-Subscription-Key': subscription_key,
+                'Ocp-Apim-Subscription-Region': location,
+                'Content-type': 'application/json',
+                'X-ClientTraceId': str(uuid.uuid4())
+            }
+
+            # You can pass more than one object in body.
+        body = [{
+                'text': text
+            }]
+
+        request = requests.post(constructed_url, params=params, headers=headers, json=body)
+        response = request.text
+        data = json.loads(response)
+        return data[0]["translations"][0]["text"]
+        
+
 
 
 
