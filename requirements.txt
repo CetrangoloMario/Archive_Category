@@ -16,3 +16,5 @@ azure-storage-blob
 botbuilder-ai>=4.14.0
 httplib
 azure-ai-textanalytics
+azure-functions
+pycrypto

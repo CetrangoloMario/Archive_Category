@@ -5,7 +5,7 @@ from typing import List
 from unicodedata import category, name
 from aiohttp import request
 
-from grapheme import length
+from grapheme import contains, length
 import databaseManager
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
@@ -87,9 +87,6 @@ class Upload_file_dialog(ComponentDialog):
         self.add_dialog(
             WaterfallDialog(
                 "WFDialogOption", [
-                    self.step_traduction,
-                    self.step_compression,
-                    self.step_crypto,
                     self.step_final  #salva nel container scelto e cancella quelli temporanei.
                     ]
             )
@@ -108,13 +105,13 @@ class Upload_file_dialog(ComponentDialog):
 
         user= DatabaseManager.get_user(iduser)
         RG=user.getNomeRg()
-        print (RG,"")
+        #print (RG,"")
         
         """recupero lista storage account"""
         list=DatabaseManager.getListStorageByID(iduser)
         #Devo far selezionare storage account nuovo step
         listselect=[]
-        print(list,"lista")
+        #print(list,"lista")
 
 
 
@@ -212,7 +209,7 @@ class Upload_file_dialog(ComponentDialog):
     
     async def step_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         await step_context.context.send_activity("....Categorizziamo il file appena caricato.....")
-        container = step_context.values["name-container"]
+        container = step_context.values["name-container"] #container temporaneo
         self.container = container #salvo in una variabile d'istanza il nome del container temporaneo
         blob = step_context.values["name-blob"]
         self.blob = blob #salvo in una variabile d'istanza il nome del file inserito
@@ -224,7 +221,11 @@ class Upload_file_dialog(ComponentDialog):
         classificator = ClassificatorDocument()
         self.category, score = classificator.classificatorcategory() #elabora sul txt temporaneo ./utilities/BlockDestination.txt
         score = 100*score #per avere la percentuale da 0 a 100
-        #step_context.values["category"] = category
+        step_context.values["value_category"] = score
+        if score > 80:
+            await step_context.context.send_activity("Il file è stato categorizzato ma non ha raggiunto la percentuale di consolidamento: ",self.category)
+            return  await step_context.next(1)
+        
         await step_context.context.send_activity("il file appena caricato è stato categorizzato con la categoria: "+self.category)
         return await step_context.prompt(
                ConfirmPrompt.__name__,
@@ -236,6 +237,7 @@ class Upload_file_dialog(ComponentDialog):
 
     
     async def step_choice_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        
         risposta = step_context.result
         nome_storage = step_context.values["select_storage"]
         if risposta == True:     #inserire il file nella categoria scelta dal classificatore
@@ -244,6 +246,7 @@ class Upload_file_dialog(ComponentDialog):
         else:   #l'utente deve creare una nuova categoria oppure selezione una container gia esistente
             step_context.values["risposta"] = "no"
             listaContainers = DatabaseManager.getContainerByNameStorage(nome_storage)  #prelevo tutti i container esistenti
+            step_context.values["litaContainers"]=listaContainers
             listselect = []
             for x in listaContainers:
                 print("x: ",x)
@@ -277,6 +280,7 @@ class Upload_file_dialog(ComponentDialog):
     
     async def step_choice(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         option=step_context.result  #la scelta dell'utente
+        listacontainer=step_context.values["listaContainer"]
 
         if(option=="newContainer"):
              return await step_context.prompt(
@@ -289,14 +293,24 @@ class Upload_file_dialog(ComponentDialog):
             category = step_context.result
             if(step_context.values["risposta"] == "yes"):  #se l'utente digita yes sopra allora prendo la categoria salvata come variabili d'istanza la categoria scelta dal classificatore 
                 await step_context.context.send_activity("Hai Confermato la categoria predetta: "+self.category)
-                return await step_context.begin_dialog("WFDialogOption")
+                if self.category in listacontainer: 
+                    return await step_context.begin_dialog("WFDialogOption")
+                return await step_context.next(1)
+            
             else: #altrimenti devo aggiornare la variabile d'istanza e mettere la categoria selezionata dall'utente
                 self.category = category
                 await step_context.context.send_activity("Hai selezionato la categoria: "+self.category)
-                return await step_context.begin_dialog("WFDialogOption")
+                if self.category in listacontainer: 
+                    return await step_context.begin_dialog("WFDialogOption")
+                return await step_context.next(1)
     
     async def step_create_container(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        nome_categoria = step_context.result
+        if step_context.result is None:
+            nome_categoria=self.category
+        else:
+            nome_categoria= step_context.result
+            self.category=nome_categoria
+            
         await step_context.context.send_activity("Creiamo la nuova categoria: "+nome_categoria)
         #inserire nel db la nuova categoria (controllare lerrore nel caso in cui la categoria inserita già esiste)
         container = Container(nome_categoria,step_context.values["select_storage"])
@@ -304,64 +318,21 @@ class Upload_file_dialog(ComponentDialog):
         #creare anche nello storage account la categoria
         self.blob_service_client.create_container(nome_categoria)
         await step_context.context.send_activity("Hai creato la nuova categoria")
-        self.category = nome_categoria #salvo la nuoca categoria creata
+        self.category = nome_categoria #salvo la nuova categoria creata
         #passare allo step successivo WFDialogOption
         return await step_context.begin_dialog("WFDialogOption")
-
-    async def step_traduction(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        return await step_context.prompt(
-               TextPrompt.__name__,
-                PromptOptions(
-                    prompt=MessageFactory.text("il file appena caricato vuoi tradurre (inserisci il codice lingua ad esempio italiano --> it) oppure digita No??") #aggiungere il controllo sul codice lingua
-                ),
-            )
     
-    async def step_compression(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        lingua = step_context.result
-        print("lingua: ",lingua)
-        #se option devo passare allo steo successuvi chiededno la compressione altrimento devo effettuare la traduzione del file
-        if lingua == "no" or lingua == "No":
-            return await step_context.prompt(
-               ConfirmPrompt.__name__,
-                PromptOptions(
-                    prompt=MessageFactory.text("Non hai scelto la traduzione.... Desidera comprimere il file  (digita Yes o No)??") #aggiungere il controllo sul codice lingua
-                ),
-            )
-        else:
-            #prelevo il testo salvato nel file txt temporaneo 
-            with open("./utilities/BlockDestination.txt","r") as fd:
-                text = fd.read()
-            """prelevare il testo tradotto e metterlo nel blob temporaneo insieme al file di partenza"""
-            text_translate = self.translate(lingua,text)
-            blob_client = self.blob_service_client.get_blob_client(container=self.container, blob="translate-"+self.blob)
-            blob_client.upload_blob(text_translate)
-            return await step_context.prompt(
-               ConfirmPrompt.__name__,
-                PromptOptions(
-                    prompt=MessageFactory.text("Desidera comprimere il file (digita Yes o No)?") #aggiungere il controllo sul codice lingua
-                ),
-            )
-        
-
-    async def step_crypto(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        scelta = step_context.result
-        if scelta == False:
-            #chiedi se l'utente vuole effettuare la criptazione
-            pass
-        else:
-            #effettua la compressione del file
-            pass
-
 
     async def step_final(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        scelta = step_context.result
-        if scelta == False:
-            #inserimo del file nel contenitore scelta dall'utente
-            pass
-        else:
-            #effettua la criptazione del file e l'inserimento del file nel contenitore (categoria) scelta dall'utente
-            pass
-
+        cointaner=self.category
+        nome_blob=self.blob#temporaneo
+        
+        
+        #azure function parametri file, resituisce file criptato e comprss con le stringhe che ha usato 
+        
+        #cancellare il blob temporanei
+        #sincronizzare db
+        
 
 
 
@@ -405,45 +376,6 @@ class Upload_file_dialog(ComponentDialog):
         return len(valid_images) > 0 
 
     
-    @staticmethod
-    def translate(lingua, text):
-        # Add your subscription key and endpoint
-        subscription_key = CONFIG.AZURE_TRANSLATION_KEY
-        endpoint = "https://api.cognitive.microsofttranslator.com"
-
-        # Add your location, also known as region. The default is global.
-        #This is required if using a Cognitive Services resource.
-        location = "westeurope"
-
-        path = '/translate'
-        constructed_url = endpoint + path
-
-        params = {
-                'api-version': '3.0',
-                'to': lingua
-            }
-
-        constructed_url = endpoint + path
-
-        headers = {
-                'Ocp-Apim-Subscription-Key': subscription_key,
-                'Ocp-Apim-Subscription-Region': location,
-                'Content-type': 'application/json',
-                'X-ClientTraceId': str(uuid.uuid4())
-            }
-
-            # You can pass more than one object in body.
-        body = [{
-                'text': text
-            }]
-
-        request = requests.post(constructed_url, params=params, headers=headers, json=body)
-        response = request.text
-        data = json.loads(response)
-        return data[0]["translations"][0]["text"]
-        
-
-
 
 
 
