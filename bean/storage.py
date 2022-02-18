@@ -30,8 +30,9 @@ class Storage:#si aggingono mano mano i tag .... tipo di compressione criptazion
     def getPwd(self):
         return self.pwd
     
-    def getPwdDecript(self):
-            return crypto.decrypt(self.pwd) 
+    def getPwdDecript(self,pwd):
+        crypto = Crypto()
+        return crypto.decrypt(pwd) 
     
     def setPwdDecript(self):
         return crypto.crypt(self.pwd)

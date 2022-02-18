@@ -4,9 +4,7 @@ from urllib.request import urlopen
 import sys
 import os
 import base64
-
-from Crypto.Cipher import AES
-
+import urllib.request
 import requests
 import json
 import azure.functions as func
@@ -57,14 +55,14 @@ def heandlerfunction(url_blob,key, option):
     return None
     
 def crypto_compression_func(url_blob,key):
-    
-    pass
-    
+    weburl = urllib.request.urlopen(url_blob)
 
-
+    
+        
 def decrypto_decompression_func(url_blob,key):
-    
     pass
+
+
 
 
    

@@ -270,6 +270,15 @@ class DatabaseManager:
         print("lista nome contaoner: ",listNomeContainer)  
         return listNomeContainer
 
+    @staticmethod
+    def getPassword(name_storage: str):
+        listNomeContainer=[]
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT password FROM storage where name=?",name_storage)
+                row = cursor.fetchone()
+                return row[0]  #ritorno ls pwd
+        return None
 
 
     
