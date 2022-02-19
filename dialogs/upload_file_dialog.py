@@ -14,6 +14,7 @@ from databaseManager import DatabaseManager
 from bean.user import User
 from bean.storage import Storage
 from bean.container import Container
+from bean.blob import Blob
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__
 from utilities.crypto import Crypto
 from botbuilder.core import BotFrameworkAdapter
@@ -53,6 +54,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from utilities.classificatordocument import ClassificatorDocument
 from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
+from utilities.crypt_decrypt import Crypt_decrypt
 
 CONFIG = DefaultConfig
 
@@ -220,14 +222,29 @@ class Upload_file_dialog(ComponentDialog):
         blob = step_context.values["name-blob"]
         self.blob = blob #salvo in una variabile d'istanza il nome del file inserito
         blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
-        with open("./utilities/BlockDestination.txt", "w") as my_blob: #salvo tutto nel file txt temporaneo
+        
+        
+        """Se un txt ok, se altro file usare OCR """
+        download_stream = blob_client.download_blob()
+        try:
+            str_file=download_stream.readall().decode("UTF-8")
+            #myblob deve essere passato al machine learnig
+            classificator = ClassificatorDocument()
+            self.category, score = classificator.classificatorcategory(str_file) #elabora sul txt temporaneo ./utilities/BlockDestination.txt
+            score = 100*score #per avere la percentuale da 0 a 100
+            step_context.values["value_category"] = score
+        except Exception:
+            print(" Il File in oggetto non è stato classificato, problema lettura file, stabilisci una categoria a mano")
+            await step_context.context.send_activity(" Il File in oggetto non è stato classificato, problema lettura file, stabilisci una categoria a mano")
+            self.category=""
+            step_context.values["value_category"] = 0
+        """with open("./utilities/BlockDestination.txt", "w") as my_blob: #salvo tutto nel file txt temporaneo
                 download_stream = blob_client.download_blob()
-                my_blob.write(download_stream.readall())
-        #myblob deve essere passato al machine learnig
-        classificator = ClassificatorDocument()
-        self.category, score = classificator.classificatorcategory() #elabora sul txt temporaneo ./utilities/BlockDestination.txt
-        score = 100*score #per avere la percentuale da 0 a 100
-        step_context.values["value_category"] = score
+                my_blob.write(download_stream.readall())"""
+                
+                
+                
+        
         if score <=55:
             await step_context.context.send_activity("Il file è stato categorizzato ma non ha superato la soglia di consolidamneto: ",self.category)
             return  await step_context.next(1)
@@ -338,21 +355,18 @@ class Upload_file_dialog(ComponentDialog):
         blob_temp = self.blob_service_client.get_blob_client(container=self.rg+CONFIG.CONTAINER_BLOB_TEMP,blob=nome_blob) #prelevo il blob appena caricato
 
         #estraggo dal db la password
-        pwdcipher = DatabaseManager.getPassword(self.nome_storage)
+        pwd = DatabaseManager.getPassword(self.nome_storage)
         
-        storage = Storage()
-        pwd = storage.getPwdDecript(pwdcipher)
-
         print("password: ",pwd)
 
 
-        key = self.make_password(bytes(pwd,'utf-8'),b'10')
+        key = Crypt_decrypt.make_password(bytes(pwd,'utf-8'),b'10')
 
         text = blob_temp.download_blob().readall().decode("UTF-8")
 
-        print("testo: ",text)
-        print("type: ",type(text))
-        cipher = self.enncrypt(text,key)
+        #print("testo: ",text)
+        #print("type: ",type(text))
+        cipher = Crypt_decrypt.enncrypt(text,key)
 
         #inserirlo nel container selezionato
         blob_client= self.blob_service_client.get_blob_client(container=self.category, blob=nome_blob) 
@@ -361,7 +375,10 @@ class Upload_file_dialog(ComponentDialog):
         blob_temp.delete_blob()
         #cancellare il blob temporanei
 
-        #sincronizzare    
+        #sincronizzare  
+        blob=Blob(self.blob,self.category,None,None)
+        DatabaseManager.insert(blob)
+        
 
 
     @staticmethod
@@ -383,34 +400,6 @@ class Upload_file_dialog(ComponentDialog):
 
         prompt_context.recognized.value = valid_images
         return len(valid_images) > 0
-
-    @staticmethod
-    def enncrypt(text,key):
-        cipher_suite = Fernet(key)
-        cipher_text = cipher_suite.encrypt(text.encode("utf-8"))
-        cipher_text_utf8 = base64.b64encode(b"10").decode('utf-8') + cipher_text.decode('utf-8') #salt costante
-        return cipher_text_utf8
-    
-    def decrypt(cipher,key):
-        salt = base64.b64decode(cipher[:24].encode("utf-8"))
-        cipher_suite = Fernet(key)
-        plain_text = cipher_suite.decrypt(cipher[24:].encode("utf-8"))
-        plain_text_utf8 = plain_text.decode("utf-8")
-        return plain_text_utf8
-    
-
-    @staticmethod
-    def make_password(password, salt): #salt costante
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100000,
-            backend=default_backend()
-            )
-        return base64.urlsafe_b64encode(kdf.derive(password))
-
-
 
     
 

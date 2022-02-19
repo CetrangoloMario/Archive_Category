@@ -35,7 +35,7 @@ class Storage:#si aggingono mano mano i tag .... tipo di compressione criptazion
         return crypto.decrypt(pwd) 
     
     def setPwdDecript(self):
-        return crypto.crypt(self.pwd)
+        return Crypto.crypt(self.pwd)
   
 
         

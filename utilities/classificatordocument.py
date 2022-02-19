@@ -28,19 +28,9 @@ class ClassificatorDocument():
 
 
     """ritorna una tupla [categoria, score]"""
-    def classificatorcategory(self):
+    def classificatorcategory(self,txt :str):
 
-        path_to_sample_document = os.path.abspath(
-        os.path.join(
-            os.path.abspath(__file__),
-            "..",
-            "./BlockDestination.txt",
-        )
-        )
-
-
-        with open(path_to_sample_document) as fd:
-            document = [fd.read()]
+        document=txt
 
         poller = self.client.begin_analyze_actions(
         document,

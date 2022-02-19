@@ -54,6 +54,7 @@ class DatabaseManager:
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
+                    
                     cursor.execute("INSERT INTO storage VALUES (?,?,?,?)",storage.getStorageName(),storage.getKeyStorage(), storage.getIdUserStorage(), storage.getPwd())
                 except pyodbc.IntegrityError:
                     print("integrity error")
@@ -181,6 +182,23 @@ class DatabaseManager:
                     return register
                 #row = cursor.fetchone() 
         return register
+    
+    
+    @staticmethod
+    def insert_blob(blob: Blob):
+        register = True
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                try:
+                   
+                    cursor.execute("INSERT INTO blob VALUES (?,?,?,?)", blob.getName(),blob.getNameContainer(),blob.getCrypto(),blob.getCompression())
+                except pyodbc.IntegrityError:
+                    register=False
+                    print("integrity error")
+                    return register
+                #row = cursor.fetchone() 
+                
+        return register
 
 
     
@@ -272,12 +290,15 @@ class DatabaseManager:
 
     @staticmethod
     def getPassword(name_storage: str):
-        listNomeContainer=[]
+        
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT password FROM storage where name=?",name_storage)
                 row = cursor.fetchone()
-                return row[0]  #ritorno ls pwd
+                
+                storage = Storage()
+                pwd = storage.getPwdDecript(row[0])
+                return pwd  #ritorno ls pwd
         return None
 
 

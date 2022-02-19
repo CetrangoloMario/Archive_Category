@@ -9,8 +9,9 @@ go
 create table storage (
   name varchar(50) not null constraint storage_pk primary key nonclustered,
   keystorage varchar(200) not null,
-  iduser varchar(100) not null unique,
+  iduser varchar(100) not null,
   password varchar(30) not null,
+  unique(name,iduser),
   CONSTRAINT FK_iduser_iduser FOREIGN KEY (iduser) REFERENCES utente (idUser) ON UPDATE CASCADE ON DELETE CASCADE
 ) 
 go
@@ -24,8 +25,9 @@ create table container (
 go
 create table blob (
   nomeblob varchar(20) not null constraint blob_pk primary key nonclustered,
-  name_container varchar(30) not null unique,
+  name_container varchar(30) not null ,
   crypto varchar(50) DEFAULT null,
   comprimere varchar(50) DEFAULT null,
+  unique(nomeblob, name_container),
   CONSTRAINT FK_name_container_name FOREIGN KEY (name_container) REFERENCES container (name) ON UPDATE CASCADE ON DELETE CASCADE
 ) 
