@@ -27,7 +27,7 @@ class DefaultConfig:
     """dati per il servizio di traduzione"""
     AZURE_TRANSLATION_KEY = os.environ.get("AZURE_TRANSLATION_KEY","1a18d666c0094f65836f2c9dc326cda2")
 
-
+    CONVERT_API_SECRET = "i7V5qBfDmNJisc7Z"
 
 
 

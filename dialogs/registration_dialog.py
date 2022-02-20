@@ -92,16 +92,8 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
                     DatabaseManager.delete_storage(storage)
                 
                 CONTAINER_TEMP = rg+CONFIG.CONTAINER_BLOB_TEMP
-                CONTAINER_BUSINESS = "business"
-                CONTAINER_ENTERTAINMENT = "entertainment"
-                CONTAINER_POLITICS = "politics"
-                CONTAINER_SPORT = "sport"
-                CONTAINER_TECH = "tech"
-                """inserimento multiplo di container"""
-                listaContainer = [CONTAINER_TEMP, CONTAINER_BUSINESS,CONTAINER_ENTERTAINMENT,CONTAINER_POLITICS,CONTAINER_SPORT,CONTAINER_TECH]
+                DatabaseManager.insert_container(Container(CONTAINER_TEMP,storage.getStorageName()))
 
-                print("storage: ",storage.getStorageName)
-                DatabaseManager.inser_container_multiple(listaContainer,storage.getStorageName())
 
                 await step_context.context.send_activity("Registrazione Completata !!!")
                 return await step_context.end_dialog()
@@ -172,20 +164,7 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
         CONTAINER_NAME = nomeArchivio+CONFIG.CONTAINER_BLOB_TEMP
         container = storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_NAME, {})
 
-        """creare container prefissate per la categorizzazione"""
-
-        CONTAINER_BUSINESS = "business"
-        CONTAINER_ENTERTAINMENT = "entertainment"
-        CONTAINER_POLITICS = "politics"
-        CONTAINER_SPORT = "sport"
-        CONTAINER_TECH = "tech"
-
-        storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_BUSINESS, {})
-        storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_ENTERTAINMENT, {})
-        storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_POLITICS, {})
-        storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_SPORT, {})
-        storage_client.blob_containers.create(RESOURCE_GROUP_NAME, STORAGE_ACCOUNT_NAME, CONTAINER_TECH, {})
-
+    
         if container is None:
             return None
 

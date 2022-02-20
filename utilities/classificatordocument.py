@@ -32,8 +32,10 @@ class ClassificatorDocument():
 
         document=txt
 
+        #print("testo da classificare: ",document)
+
         poller = self.client.begin_analyze_actions(
-        document,
+        [document],
         actions=[
             MultiCategoryClassifyAction(
                 project_name=config.MULTI_CATEGORY_CLASSIFY_PROJECT_NAME,

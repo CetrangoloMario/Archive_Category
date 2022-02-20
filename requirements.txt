@@ -18,3 +18,4 @@ httplib
 azure-ai-textanalytics
 azure-functions
 pycrypto
+convertapi
