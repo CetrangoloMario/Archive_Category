@@ -2,6 +2,7 @@ from typing import List
 
 from grapheme import length
 from bean import *
+from bean import container
 import databaseManager
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
@@ -9,8 +10,11 @@ from databaseManager import DatabaseManager
 from bean.user import User
 from bean.storage import Storage
 from bean.container import Container
+from bean.blob import Blob
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__
 
+from datetime import datetime, timedelta
+from azure.storage.blob import BlobClient, generate_blob_sas, BlobSasPermissions
 
 from utilities.crypto import Crypto
 from botbuilder.core import BotFrameworkAdapter
@@ -43,7 +47,7 @@ from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
 
 CONFIG = DefaultConfig
-#main_dialog=MainDialog()
+main_dialog=MainDialog()
 
 """passi sono utente digita il nome o deve selezionare storage acount, da li può selezionare un container e visualizza tutti i file, o seleziona il file o deve toranere alla visualizza container, che gli potrebbe permettere visualizza storage
  MC: capitò io volevo sapere se quando faccio scorrere fllusso ivece di fa spep.contest.next posso fare step begin (WFdialogView. funzionedello step)
@@ -58,6 +62,7 @@ class Download_file_dialog(ComponentDialog):
         self.storage=Storage()
         self.container= Container()
         self.blob= Blob()
+        
         
         self.add_dialog(                # allora problema io inserisco nome file o seleziono la ricerca/ se ricerca devo fare dallo storage fino ad arrivare al fileù
             WaterfallDialog(                # se file faccio spep_file che mi da tutti i file con quel nome ma sappiamo che con i vincoli solo un file sarà
@@ -140,19 +145,28 @@ class Download_file_dialog(ComponentDialog):
         
         nomeFile= step_context.result#sia caso ricerca che inserito nome
         
-        listFile=[]
-        listFile=DatabaseManager.getBlobByName(nomeFile)#return lista (lista per il momento contiene solamente un file con i vincoli del db) o None
         
-        if listFile is None:
+        blob=DatabaseManager.getBlobByName(nomeFile)#return lista (lista per il momento contiene solamente un file con i vincoli del db) o None
+        
+        if blob is None:
             await step_context.context.send_activity(" File non trovato ")
             return await step_context.reprompt_dialog()
         
-        elif len(listFile)<2:
+        else:
             await step_context.context.send_activity(" File trovato un solo elemento")
-            #funzione download
-            #return await step_context.begin_dialog(main_dialog.begin_dialog("WFDialog"))
+            self.name_container=blob.getNameContainer#cosi il container
+            listaStorageUser=DatabaseManager.getListStorageByID(step_context.context.activity.from_property.id)
+            if listaStorageUser is not None:
+                storage=Storage()
+                storage=listaStorageUser[0]
+            
+               
+                await step_context.context.send_activity(MessageFactory.attachment( self.download_file(nomeFile, storage,self.name_container)))
+            
+            return await step_context.begin_dialog(main_dialog.begin_dialog("WFDialog"))
         
-        
+        #più storage account 
+        """
         # Step successivo quando si estende al possesso di più storage account e poi alla condivisione dei file 
         step_context.values["listFile"]=listFile
         
@@ -166,11 +180,11 @@ class Download_file_dialog(ComponentDialog):
             )
             listselect.append(object)
         
-        """listselect.append(CardAction(
+        listselect.append(CardAction(
                 type=ActionTypes.im_back,
                 title ="Scarica Tutti i File",
                 value="all_download"
-            ))"""
+            ))
         
         listselect.append(CardAction(
                 type=ActionTypes.im_back,
@@ -187,7 +201,7 @@ class Download_file_dialog(ComponentDialog):
             PromptOptions(
                 MessageFactory.attachment(CardFactory.hero_card(card))
             ),
-        )
+        )"""
             
         
         
@@ -236,11 +250,44 @@ class Download_file_dialog(ComponentDialog):
         
     
     
-             
-    def download_file(nome_file: str):
+    @staticmethod       
+    def download_file(nome_blob: str, storage: Storage(), nome_container: str):
+        
+        #oggetto blob_client ho come variabile di istanza, nome container e nome storage in istanza.
+        
+        NAMESTORAGE=storage.getStorageName()
+        
+        #key 
+        ACCOUNT_KEY = storage.getKeyStorageDecript(storage.getKeyStorage())
+        try:
+            connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
+            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            blob_client= blob_service_client.get_blob_client(container= nome_container, blob=nome_blob )
+           
+            sas_blob = generate_blob_sas(account_name=blob_client.account_name, 
+                                container_name=nome_container,
+                                blob_name=nome_blob,
+                                account_key=ACCOUNT_KEY,
+                                permission=BlobSasPermissions(read=True),
+                                expiry=datetime.utcnow() + timedelta(hours=1))
+     
+
+            #url
+            
+            url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
+            #se dal url me lo leggo nel bot
+            property=blob_client.get_blob_properties()#così
+            
+            #dal blob online con le stringhe di proprietà del blob
+            
+            return  Attachment( name=nome_blob, content_type=property.__dict__["content_type"], content_url=url, ) 
+
+            #va bene che dici
+
+            #attachment download
+        except Exception():
+            return Exception()
+            
         
         
-        
-        pass
-        return True
     

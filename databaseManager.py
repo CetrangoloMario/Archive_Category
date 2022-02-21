@@ -236,6 +236,9 @@ class DatabaseManager:
                     return temp
                 else:
                     return None
+        
+                
+    
 
 
     @staticmethod
@@ -256,7 +259,7 @@ class DatabaseManager:
     
     @staticmethod #
     def getBlobByName(nome: str):
-        listblob=[]
+        
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM blob where nomeblob=?",nome)
@@ -269,8 +272,8 @@ class DatabaseManager:
                         temp.name_container=str(row[1])
                         temp.crypto=str(row[2])
                         temp.compression=str(row[3])
-                        listblob.append(temp)
-                    return listblob         
+                        
+                    return temp         
         return None
     
     @staticmethod 
