@@ -265,6 +265,7 @@ class DatabaseManager:
                 cursor.execute("SELECT * FROM blob where nomeblob=?",nome)
                 row = cursor.fetchone()
                 temp=Blob()
+                print("row: ",row)
                 if len(row) > 0:
                     while row:
                         temp=Blob()
@@ -272,7 +273,7 @@ class DatabaseManager:
                         temp.name_container=str(row[1])
                         temp.crypto=str(row[2])
                         temp.compression=str(row[3])
-                        
+                        row = cursor.fetchone()   
                     return temp         
         return None
     

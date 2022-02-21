@@ -22,7 +22,7 @@ from botbuilder.dialogs.prompts import TextPrompt, PromptOptions, ChoicePrompt
 from botbuilder.core import MessageFactory, TurnContext, CardFactory, UserState
 from botbuilder.schema import Attachment, InputHints, SuggestedActions
 from botbuilder.dialogs.choices import Choice
-from .main_dialog import MainDialog
+
     
 from botbuilder.schema import (
     ChannelAccount,
@@ -47,7 +47,7 @@ from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
 
 CONFIG = DefaultConfig
-main_dialog=MainDialog()
+#main_dialog=MainDialog(CONFIG.CONNECTION_NAME,)
 
 """passi sono utente digita il nome o deve selezionare storage acount, da li può selezionare un container e visualizza tutti i file, o seleziona il file o deve toranere alla visualizza container, che gli potrebbe permettere visualizza storage
  MC: capitò io volevo sapere se quando faccio scorrere fllusso ivece di fa spep.contest.next posso fare step begin (WFdialogView. funzionedello step)
@@ -63,6 +63,7 @@ class Download_file_dialog(ComponentDialog):
         self.container= Container()
         self.blob= Blob()
         
+        #self._main_dialog = main_dialog.id
         
         self.add_dialog(                # allora problema io inserisco nome file o seleziono la ricerca/ se ricerca devo fare dallo storage fino ad arrivare al fileù
             WaterfallDialog(                # se file faccio spep_file che mi da tutti i file con quel nome ma sappiamo che con i vincoli solo un file sarà
@@ -82,8 +83,9 @@ class Download_file_dialog(ComponentDialog):
             WaterfallDialog(
                 "WFSearchFile",[
                     self.step_select_storage,
+                    """
                     self.step_select_container,
-                    self.step_select_file
+                    self.step_select_file"""
                     
                 ]
             )
@@ -134,7 +136,7 @@ class Download_file_dialog(ComponentDialog):
         message_text = "Inserisci nome file: \n"
         prompt_message = MessageFactory.text(message_text, message_text, InputHints.expecting_input)
         return await step_context.prompt(
-                ConfirmPrompt.__name__, PromptOptions(prompt=prompt_message)
+                TextPrompt.__name__, PromptOptions(prompt=prompt_message)
             )
         
         
@@ -148,22 +150,22 @@ class Download_file_dialog(ComponentDialog):
         
         blob=DatabaseManager.getBlobByName(nomeFile)#return lista (lista per il momento contiene solamente un file con i vincoli del db) o None
         
+        print("blob: ",blob)
+
         if blob is None:
             await step_context.context.send_activity(" File non trovato ")
             return await step_context.reprompt_dialog()
         
         else:
             await step_context.context.send_activity(" File trovato un solo elemento")
-            self.name_container=blob.getNameContainer#cosi il container
+            self.name_container=blob.getNameContainer()#cosi il container
             listaStorageUser=DatabaseManager.getListStorageByID(step_context.context.activity.from_property.id)
             if listaStorageUser is not None:
                 storage=Storage()
                 storage=listaStorageUser[0]
-            
-               
                 await step_context.context.send_activity(MessageFactory.attachment( self.download_file(nomeFile, storage,self.name_container)))
             
-            return await step_context.begin_dialog(main_dialog.begin_dialog("WFDialog"))
+            #return await step_context.begin_dialog(self._main_dialog.begin_dialog("WFDialog"))
         
         #più storage account 
         """
@@ -259,34 +261,33 @@ class Download_file_dialog(ComponentDialog):
         
         #key 
         ACCOUNT_KEY = storage.getKeyStorageDecript(storage.getKeyStorage())
-        try:
-            connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
-            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-            blob_client= blob_service_client.get_blob_client(container= nome_container, blob=nome_blob )
-           
-            sas_blob = generate_blob_sas(account_name=blob_client.account_name, 
-                                container_name=nome_container,
-                                blob_name=nome_blob,
-                                account_key=ACCOUNT_KEY,
-                                permission=BlobSasPermissions(read=True),
-                                expiry=datetime.utcnow() + timedelta(hours=1))
-     
+        #try:
+        connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        blob_client= blob_service_client.get_blob_client(container= nome_container, blob=nome_blob )
+        
+        sas_blob = generate_blob_sas(account_name=blob_client.account_name, 
+                            container_name=nome_container,
+                            blob_name=nome_blob,
+                            account_key=ACCOUNT_KEY,
+                            permission=BlobSasPermissions(read=True),
+                            expiry=datetime.utcnow() + timedelta(hours=1))
+    
 
-            #url
-            
-            url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
-            #se dal url me lo leggo nel bot
-            property=blob_client.get_blob_properties()#così
-            
-            #dal blob online con le stringhe di proprietà del blob
-            
-            return  Attachment( name=nome_blob, content_type=property.__dict__["content_type"], content_url=url, ) 
+        #url
+        
+        url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
+        #se dal url me lo leggo nel bot
+        property=blob_client.get_blob_properties()#così
+        #dal blob online con le stringhe di proprietà del blob
+        
+        return  Attachment(name=nome_blob, content_type=property.get("content_type"),content_url=url, ) 
 
             #va bene che dici
 
             #attachment download
-        except Exception():
-            return Exception()
+        #except Exception():
+            #return Exception()
             
         
         

@@ -25,7 +25,7 @@ from botbuilder.schema._connector_client_enums import ActivityTypes
 from botbuilder.dialogs.dialog import Dialog
 from botbuilder.core import BotFrameworkAdapter
 from dialogs.upload_file_dialog import Upload_file_dialog
-from dialogs.view_file_dialog import View_file_dialog
+from dialogs.download_file_dialog import Download_file_dialog
 from bean import *
 import os
 import json
@@ -33,7 +33,7 @@ from typing import Dict
 
 registration_dialog = RegistrationDialog()
 upload_file_dialog  = Upload_file_dialog()
-#view_file_dialog = View_file_dialog() 
+download_file_dialog = Download_file_dialog() 
 
 class MainDialog(ComponentDialog):
     
@@ -42,7 +42,7 @@ class MainDialog(ComponentDialog):
         self.connection_name=connection_name
         self.registration_dialog_id=registration_dialog.id
         self.upload_file_dialog = upload_file_dialog.id
-      
+        self._download_file_dialog = download_file_dialog.id
     
         self.add_dialog(
             OAuthPrompt(
@@ -72,6 +72,8 @@ class MainDialog(ComponentDialog):
         self.add_dialog(registration_dialog)
 
         self.add_dialog(upload_file_dialog)
+
+        self.add_dialog(download_file_dialog)
     
         self.add_dialog(
             WaterfallDialog(
@@ -176,7 +178,7 @@ class MainDialog(ComponentDialog):
 
         if option=="scaricaFile":
             await step_context.context.send_activity("hai scelto visualizzafile")
-            return await step_context.begin_dialog(self.view_file_dialog)
+            return await step_context.begin_dialog(self._download_file_dialog)
 
         if option=="logout": 
             bot_adapter: BotFrameworkAdapter = step_context.context.adapter

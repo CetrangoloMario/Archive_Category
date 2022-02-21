@@ -58,7 +58,6 @@ from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
 from utilities.crypt_decrypt import Crypt_decrypt
 import convertapi
-
 CONFIG = DefaultConfig
 
 #passi utente carica il file, poi viene categorizzato dal servizio machine learning, (serve blob temporaneo)
@@ -218,6 +217,10 @@ class Upload_file_dialog(ComponentDialog):
         #blob_client.upload_blob_from_url(file.__dict__["content_url"]) #prelevo l'url per caricare il file nel blob
         #inserimento del file nel database
 
+        property = blob_client.get_blob_properties()
+
+        print("proprita: ",property)
+
         #with open("./sample.pdf", "rb") as data:
             #blob_client.upload_blob(data, blob_type="BlockBlob")
 
@@ -246,9 +249,11 @@ class Upload_file_dialog(ComponentDialog):
         blob = step_context.values["name-blob"]
         self.blob = blob #salvo in una variabile d'istanza il nome del file inserito
         blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
+        #fare if se non è txt file chiamara un azure function in cui converte il file e restituisce il contenuto
 
-        #fare if se non è txt file chiamara un azure function in cui converte il file e restituisce il contenuto 
-        
+        text = blob_client.download_blob().readall().decode("UTF-8")
+
+        """
         root, ext = os.path.splitext(blob)
         convertapi.api_secret = CONFIG.CONVERT_API_SECRET
         with open("./utilities/temp-document"+ext, "wb") as my_blob:
@@ -263,6 +268,7 @@ class Upload_file_dialog(ComponentDialog):
 
         #print("contenuto: ",contenuto)
         #print(type(contenuto))
+        """
         try:
             str_file= text
             print("text: ",str_file)
@@ -417,9 +423,9 @@ class Upload_file_dialog(ComponentDialog):
 
         #sincronizzare  
         blob=Blob(self.blob,self.category,None,None)
-        DatabaseManager.insert(blob)
+        DatabaseManager.insert_blob(blob)
+        print("ok tutto")
         
-
 
     @staticmethod
     async def file_prompt_validator(prompt_context: PromptValidatorContext) -> bool:

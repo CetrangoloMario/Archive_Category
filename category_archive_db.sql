@@ -10,7 +10,7 @@ create table storage (
   name varchar(50) not null constraint storage_pk primary key nonclustered,
   keystorage varchar(200) not null,
   iduser varchar(100) not null,
-  password varchar(30) not null,
+  password varchar(100) not null,
   unique(name,iduser),
   CONSTRAINT FK_iduser_iduser FOREIGN KEY (iduser) REFERENCES utente (idUser) ON UPDATE CASCADE ON DELETE CASCADE
 ) 
