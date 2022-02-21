@@ -52,11 +52,11 @@ CONFIG = DefaultConfig
 """passi sono utente digita il nome o deve selezionare storage acount, da li può selezionare un container e visualizza tutti i file, o seleziona il file o deve toranere alla visualizza container, che gli potrebbe permettere visualizza storage
  MC: capitò io volevo sapere se quando faccio scorrere fllusso ivece di fa spep.contest.next posso fare step begin (WFdialogView. funzionedello step)
  MC: quindi in sessione mi devosalvare ste cose se no ogni volta devo fa la queryt""" 
-class Download_file_dialog(ComponentDialog):
+class Delete_file_dialog(ComponentDialog):
 
     
     def __init__(self, dialog_id: str = None):
-        super(Download_file_dialog,self).__init__(dialog_id or Download_file_dialog.__name__)   
+        super(Delete_file_dialog,self).__init__(dialog_id or Delete_file_dialog.__name__)   
         self.connection_string = ""
         self.user = User()
         self.storage=Storage()
@@ -71,7 +71,7 @@ class Download_file_dialog(ComponentDialog):
                     self.step_initial, # chiedo all'utente nome file o se lo vuole cercare
                     self.option_step,
                     self.step_insert_name_file,
-                    self.step_download
+                    self.step_delete
                     #Step successivo dipende dalla scelta se cancellare il file, scaricarlos
 
                     ]
@@ -86,7 +86,7 @@ class Download_file_dialog(ComponentDialog):
                     self.step_select_container,
                     self.step_select_file,
                     self.step_continue,
-                    self.step_download
+                    self.step_delete
                 ]
             )
         )
@@ -140,9 +140,8 @@ class Download_file_dialog(ComponentDialog):
             )
         
         
-        
         #step download
-    async def step_download(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+    async def step_delete(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         
         
         nomeFile= step_context.result#sia caso ricerca che inserito nome
@@ -163,54 +162,14 @@ class Download_file_dialog(ComponentDialog):
             if listaStorageUser is not None:
                 storage=Storage()
                 storage=listaStorageUser[0]
-                await step_context.context.send_activity(MessageFactory.attachment( self.download_file(nomeFile, storage,self.name_container)))
+                await step_context.context.send_activity("File cancellato: ")
+                #cancellare nel db
                 return await step_context.end_dialog()
             
             await step_context.context.send_activity(" Archivio corrente non trovato ")
             return await step_context.end_dialog()
             
-            #return await step_context.begin_dialog(self._main_dialog.begin_dialog("WFDialog"))
-        
-        #più storage account 
-        """
-        # Step successivo quando si estende al possesso di più storage account e poi alla condivisione dei file 
-        step_context.values["listFile"]=listFile
-        
-        await step_context.context.send_activity("Trovata una lista di file che matchano....")
-        listselect=[]
-        for x in listFile:
-            object=CardAction(
-                type=ActionTypes.im_back,
-                title =x.getNameContainer+" > "+x.getName(),
-                value=x.getContainer()
-            )
-            listselect.append(object)
-        
-        listselect.append(CardAction(
-                type=ActionTypes.im_back,
-                title ="Scarica Tutti i File",
-                value="all_download"
-            ))
-        
-        listselect.append(CardAction(
-                type=ActionTypes.im_back,
-                title ="Logout",
-                value="logout"
-            ))
-        
-        card = HeroCard(
-        text ="Ciao,...seleziona la Categoria giusta . Per uscire digita quit o esci.",
-        buttons = listselect)
-        
-        return await step_context.prompt(
-            TextPrompt.__name__,
-            PromptOptions(
-                MessageFactory.attachment(CardFactory.hero_card(card))
-            ),
-        )"""
-            
-        
-        
+      
     
     async def step_select_storage(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         
@@ -349,9 +308,9 @@ class Download_file_dialog(ComponentDialog):
         
         
     
-    
+    #Cancella file, cancella db
     @staticmethod       
-    def download_file(nome_blob: str, storage: Storage(), nome_container: str):
+    def delete_file(nome_blob: str, storage: Storage(), nome_container: str):
         
         #oggetto blob_client ho come variabile di istanza, nome container e nome storage in istanza.
         
@@ -375,17 +334,10 @@ class Download_file_dialog(ComponentDialog):
         #url
         
         url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
-        #se dal url me lo leggo nel bot
-        property=blob_client.get_blob_properties()#così
-        #dal blob online con le stringhe di proprietà del blob
         
-        return  Attachment(name=nome_blob, content_type=property.get("content_type"),content_url=url, ) 
-
-            #va bene che dici
-
-            #attachment download
-        #except Exception():
-            #return Exception()
+        blob_client.delete_blob()
+        
+        return  True
             
         
         

@@ -130,7 +130,8 @@ class MainDialog(ComponentDialog):
         
     
     async def menu_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-
+        #Dialog.resume_dialog(step_context,)
+        step_context
         card = HeroCard(
         text ="Ciao, come posso aiutarti? Per uscire digita quit o esci.",
         buttons = [

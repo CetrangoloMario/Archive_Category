@@ -247,9 +247,10 @@ class Upload_file_dialog(ComponentDialog):
             convertapi.api_secret = CONFIG.CONVERT_API_SECRET
             url = self.get_blob_sas(blob_client.account_name,blob_client.credential.account_key,container,blob)
             try:
-                convertapi.convert('txt', {'File': url}, from_format = ext[1:]).save_files('./utilities/document.txt')
-                with open("./utilities/document.txt", "rb") as file:
-                    text = file.read()
+                file=convertapi.convert('txt', {'File': url}, from_format = ext[1:]) #.save_files('./utilities/document.txt')# prendere contenuto
+                print(file)
+                #with open("./utilities/document.txt", "rb") as file:
+                   # text = file.read()
             except Exception:
                 await step_context.context.send_activity("il file caricato non è possibile classificarlo.....Scegli tra le categorie disponibili oppure crea una nuova categoria")
                 return await step_context.next(1)
