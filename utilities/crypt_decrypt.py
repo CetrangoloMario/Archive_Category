@@ -11,20 +11,19 @@ class Crypt_decrypt():
     
 
     @staticmethod
-    def encrypt(ext,key):
+    def encrypt(text,key):
         f = Fernet(key)
-        with open("./utilities/download-document"+ext,"rb") as file:
-            file_data = file.read()
-        cipher = f.encrypt(file_data)
+        cipher = f.encrypt(text)
         return cipher
+       
+        
     
     @staticmethod
     def decrypt(cipher,key):
-        salt = base64.b64decode(cipher[:24].encode("utf-8"))
-        cipher_suite = Fernet(key)
-        plain_text = cipher_suite.decrypt(cipher[24:].encode("utf-8"))
-        plain_text_utf8 = plain_text.decode("utf-8")
-        return plain_text_utf8
+        f = Fernet(key)
+        plain = f.decrypt(cipher)
+        return plain
+        
     
 
     @staticmethod

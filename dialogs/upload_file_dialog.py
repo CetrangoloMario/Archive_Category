@@ -2,9 +2,7 @@
 from cgitb import text
 from distutils.command.config import config
 from fnmatch import translate
-from logging import root
-from typing import List
-from unicodedata import category, name
+from pydoc import plain
 from aiohttp import request
 import os
 from grapheme import contains, length
@@ -81,7 +79,8 @@ class Upload_file_dialog(ComponentDialog):
                     self.step_category,#machine learning
                     self.step_choice_category,#scelta tra categorie esistenti o crea una nuova"""
                     self.step_choice, #scelta utente ok va a WFDialogOption altrimenti va nello step successivo
-                    self.step_create_container #l'utente crea il nuovo container
+                    self.step_create_container, #l'utente crea il nuovo container
+                    self.step_final
                     ]
             )
         )
@@ -92,7 +91,7 @@ class Upload_file_dialog(ComponentDialog):
 
 
 
-        
+        """
         self.add_dialog(
             WaterfallDialog(
                 "WFDialogOption", [
@@ -101,7 +100,7 @@ class Upload_file_dialog(ComponentDialog):
             )
         )
         
-
+        """
         self.step_select_storage = "WFUploadFile"
 
     
@@ -212,17 +211,7 @@ class Upload_file_dialog(ComponentDialog):
 
 
         blob_client.upload_blob(contenuto,blob_type="BlockBlob",content_settings=ContentSettings(content_type=file.__dict__["content_type"]))
-        #blob_client._upload_blob_from_url_options(file.__dict__["content_url"])
-        #blob_client._upload_blob_from_url_options()
-        #blob_client.upload_blob_from_url(file.__dict__["content_url"]) #prelevo l'url per caricare il file nel blob
-        #inserimento del file nel database
-
-        #with open("./sample.pdf", "rb") as data:
-            #blob_client.upload_blob(data, blob_type="BlockBlob")
-
-        #blob_client._upload_blob_options(file_bytes,blob_type="blockBlob")
-
-        print("inserito nel blob")
+    
 
         await step_context.context.send_activity("....File caricato con successo nel container temporaneo.....")
 
@@ -239,41 +228,38 @@ class Upload_file_dialog(ComponentDialog):
         blob = step_context.values["name-blob"]
         self.blob = blob #salvo in una variabile d'istanza il nome del file inserito
         blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
+        property = blob_client.get_blob_properties()
         #fare if se non è txt file chiamara un azure function in cui converte il file e restituisce il contenuto
-        if blob_client.get_blob_properties().get("content_type") == "text/plain":
-            text = blob_client.download_blob().readall().decode("UTF-8")
+        if property.get("content_settings")["content_type"] == "text/plain":
+            text = blob_client.download_blob().readall().decode("UTF-8") 
         else:
             root, ext = os.path.splitext(blob)
             convertapi.api_secret = CONFIG.CONVERT_API_SECRET
             url = self.get_blob_sas(blob_client.account_name,blob_client.credential.account_key,container,blob)
             try:
                 file=convertapi.convert('txt', {'File': url}, from_format = ext[1:]) #.save_files('./utilities/document.txt')# prendere contenuto
-                print(file)
-                #with open("./utilities/document.txt", "rb") as file:
-                   # text = file.read()
-            except Exception:
+                print(file.file.url)
+                ris = requests.get(file.file.url)
+                text = ris.content.decode("UTF-8")
+            except convertapi.exceptions.ApiError:
                 await step_context.context.send_activity("il file caricato non è possibile classificarlo.....Scegli tra le categorie disponibili oppure crea una nuova categoria")
-                return await step_context.next(1)
+                return await step_context.next(False)
            
         
-        str_file= text
-        print("text: ",str_file)
         #myblob deve essere passato al machine learnig
-        classificator = ClassificatorDocument()
-        self.category, score = classificator.classificatorcategory(str_file) 
-        score = 100*score #per avere la percentuale da 0 a 100
-        step_context.values["value_category"] = score
-        """
-        print(" Il File in oggetto non è stato classificato, problema lettura file, stabilisci una categoria a mano")
-        await step_context.context.send_activity(" Il File in oggetto non è stato classificato, problema lettura file, stabilisci una categoria a mano")
-        self.category=""
-        step_context.values["value_category"] = 0
-        """
-
+        try:
+            classificator = ClassificatorDocument()
+            self.category, score = classificator.classificatorcategory(text) 
+            score = 100*score #per avere la percentuale da 0 a 100
+            step_context.values["value_category"] = score
+        except Exception:
+             await step_context.context.send_activity("il file caricato non è possibile classificarlo.....Scegli tra le categorie disponibili oppure crea una nuova categoria")
+             return await step_context.next(False)
+           
         if score <=55:
             await step_context.context.send_activity("Il file è stato categorizzato ma non ha superato la soglia di consolidamneto: ",self.category)
             await step_context.context.send_activity("Scegli tra le categorie disponibili oppure crea una nuova categoria")
-            return  await step_context.next(1)
+            return  await step_context.next(False)
         else:
             await step_context.context.send_activity("il file appena caricato è stato categorizzato come: "+self.category)
             return await step_context.prompt(
@@ -343,15 +329,11 @@ class Upload_file_dialog(ComponentDialog):
             category = step_context.result
             if(step_context.values["risposta"] == "yes"):  #se l'utente digita yes sopra allora prendo la categoria salvata come variabili d'istanza la categoria scelta dal classificatore 
                 await step_context.context.send_activity("Hai Confermato la categoria predetta: "+self.category)
-                if self.category in listacontainer: 
-                    return await step_context.begin_dialog("WFDialogOption")
                 return await step_context.next(None)
             
             else: #altrimenti devo aggiornare la variabile d'istanza e mettere la categoria selezionata dall'utente
                 self.category = category
                 await step_context.context.send_activity("Hai selezionato la categoria: "+self.category)
-                if self.category in listacontainer: 
-                    return await step_context.begin_dialog("WFDialogOption")
                 return await step_context.next(None)
     
     async def step_create_container(self, step_context: WaterfallStepContext) -> DialogTurnResult:
@@ -367,53 +349,47 @@ class Upload_file_dialog(ComponentDialog):
             
         #await step_context.context.send_activity("Creiamo la nuova categoria: "+nome_categoria)
         #inserire nel db la nuova categoria (controllare lerrore nel caso in cui la categoria inserita già esiste)
-        container = Container(nome_categoria,step_context.values["select_storage"])
-        DatabaseManager.insert_container(container)
         #creare anche nello storage account la categoria
         if not self.category in listacontainer:
             self.blob_service_client.create_container(nome_categoria)
+            container = Container(nome_categoria,step_context.values["select_storage"])
+            DatabaseManager.insert_container(container)
             await step_context.context.send_activity("La categoria è stata creata ")
         else:
             await step_context.context.send_activity("la categoria gia è presente")
 
         self.category = nome_categoria 
-        return await step_context.begin_dialog("WFDialogOption")
+        return await step_context.next(1)
     
 
     async def step_final(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         #cointaner=self.category
         nome_blob=self.blob#temporaneo
-        
-        #estrarre il blob temporaneo 
-        blob_temp = self.blob_service_client.get_blob_client(container=self.rg+CONFIG.CONTAINER_BLOB_TEMP,blob=nome_blob) #prelevo il blob appena caricato
-        content_type = blob_temp.get_blob_properties().get("content_type")
-        #estraggo dal db la password
+
+        """#prelevo il blob appena caricato nel container temporaneo e prelevo anche il content-type"""
+        blob_temp = self.blob_service_client.get_blob_client(container=self.rg+CONFIG.CONTAINER_BLOB_TEMP,blob=nome_blob) 
+        type = blob_temp.get_blob_properties().get("content_settings")["content_type"]
+
+        """costruisco la key per cifratura"""
         pwd = DatabaseManager.getPassword(self.nome_storage)
-        
-        print("password: ",pwd)
+        key = Crypt_decrypt.make_password(pwd.encode(),b'10')
 
+        """Processo di cifratura e inserisco il blob nel container selezionato"""
+        url = self.get_blob_sas(blob_temp.account_name,blob_temp.credential.account_key,self.rg+CONFIG.CONTAINER_BLOB_TEMP,nome_blob)
+        response = requests.get(url)
+        text = response.content
+        cipher = Crypt_decrypt.encrypt(text,key)
+        blob_client = self.blob_service_client.get_blob_client(container=self.category, blob=nome_blob)
+        blob_client.upload_blob(cipher,content_settings=ContentSettings(content_type=type),blob_type="BlockBlob")
 
-        key = Crypt_decrypt.make_password(bytes(pwd,'utf-8'),b'10')
-
-        #text = blob_temp.download_blob().readall().decode("UTF-8")
-        root, ext = os.path.splitext(blob)
-        with open("./utilities/download-document"+ext,"wb") as my_blob:
-           download_stream = blob_temp.download_blob()
-           my_blob.write(download_stream.readall())
-
-        cipher = Crypt_decrypt.encrypt(ext,key)
-
-        #inserirlo nel container selezionato
-        blob_client= self.blob_service_client.get_blob_client(container=self.category, blob=nome_blob) 
-        blob_client.upload_blob(cipher,content_settings=ContentSettings(content_type=content_type))
-
-        #cancellare il blob temporanei
+        """cancello il blob temporaneo"""
         blob_temp.delete_blob()
     
-        #sincronizzare  
+        """sincronizzare con il database"""
         blob=Blob(self.blob,self.category,None,None)
         DatabaseManager.insert_blob(blob)
-        print("ok tutto")
+        await step_context.context.send_activity("Upload del file completato...torna al menu principale")
+        return await step_context.end_dialog() #ritorna al main dialog step final step
         
 
     @staticmethod

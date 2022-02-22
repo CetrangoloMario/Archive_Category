@@ -26,6 +26,7 @@ from botbuilder.dialogs.dialog import Dialog
 from botbuilder.core import BotFrameworkAdapter
 from dialogs.upload_file_dialog import Upload_file_dialog
 from dialogs.download_file_dialog import Download_file_dialog
+from dialogs.translate_dialog import Translate_Dialog
 from bean import *
 import os
 import json
@@ -34,6 +35,7 @@ from typing import Dict
 registration_dialog = RegistrationDialog()
 upload_file_dialog  = Upload_file_dialog()
 download_file_dialog = Download_file_dialog() 
+translate_dialog = Translate_Dialog()
 
 class MainDialog(ComponentDialog):
     
@@ -43,6 +45,7 @@ class MainDialog(ComponentDialog):
         self.registration_dialog_id=registration_dialog.id
         self.upload_file_dialog = upload_file_dialog.id
         self._download_file_dialog = download_file_dialog.id
+        self.translate_dialog = translate_dialog.id
     
         self.add_dialog(
             OAuthPrompt(
@@ -131,7 +134,6 @@ class MainDialog(ComponentDialog):
     
     async def menu_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         #Dialog.resume_dialog(step_context,)
-        step_context
         card = HeroCard(
         text ="Ciao, come posso aiutarti? Per uscire digita quit o esci.",
         buttons = [
@@ -149,6 +151,11 @@ class MainDialog(ComponentDialog):
                 type=ActionTypes.im_back,
                 title ="Carica File",
                 value="caricaFile"
+            ),
+            CardAction(
+                type=ActionTypes.im_back,
+                title ="Translate",
+                value="traduzione"
             ),
             CardAction(
                 type=ActionTypes.im_back,
@@ -176,7 +183,10 @@ class MainDialog(ComponentDialog):
         if option=="caricaFile":
             await step_context.context.send_activity("hai scelto caricafile")
             return await step_context.begin_dialog(self.upload_file_dialog)
-
+        
+        if option=="traduzione":
+            await step_context.context.send_activity("hai scelto traduzione")
+            return await step_context.begin_dialog(self.translate_dialog)
         if option=="scaricaFile":
             await step_context.context.send_activity("hai scelto visualizzafile")
             return await step_context.begin_dialog(self._download_file_dialog)

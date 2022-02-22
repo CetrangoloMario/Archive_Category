@@ -30,12 +30,8 @@ class ClassificatorDocument():
     """ritorna una tupla [categoria, score]"""
     def classificatorcategory(self,txt :str):
 
-        document=txt
-
-        #print("testo da classificare: ",document)
-
         poller = self.client.begin_analyze_actions(
-        [document],
+        [txt],
         actions=[
             MultiCategoryClassifyAction(
                 project_name=config.MULTI_CATEGORY_CLASSIFY_PROJECT_NAME,
@@ -45,12 +41,14 @@ class ClassificatorDocument():
     )
 
         document_results = poller.result()
-        for doc, classification_results in zip(document, document_results):
+        for doc, classification_results in zip(txt, document_results):
             for classification_result in classification_results:
                 if not classification_result.is_error:
                     classifications = classification_result.classifications
                     for classification in classifications:
-                        return [classification.category, classification.confidence_score]
+                        print("classification.category: ",classification.category)
+                        print("classification.category: ",classification.confidence_score)
+                        return [classification.category,classification.confidence_score]
                 else:
                     print("document plot '{}' has an error with code '{}' and message '{}'".format(
                     doc, classification_result.code, classification_result.message

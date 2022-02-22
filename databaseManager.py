@@ -321,10 +321,27 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT password FROM storage where name=?",name_storage)
                 row = cursor.fetchone()
-                
                 storage = Storage()
                 pwd = storage.getPwdDecript(row[0])
                 return pwd  #ritorno ls pwd
+        return None
+    
+    @staticmethod
+    def getBlobByStorage(name_storage: str ):
+        list=[]
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT nomeblob,name_container from blob INNER JOIN container ON blob.name_container = container.name where container.nome_storage = ?",name_storage)
+                row = cursor.fetchone()
+                if len(row)>0:
+                    while row:
+                        temp=Blob()
+                        temp.name=str(row[0])
+                        temp.name_container=str(row[1])
+                        row = cursor.fetchone()
+                        list.append(temp)
+                    return list
+                    
         return None
 
 
