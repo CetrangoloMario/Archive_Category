@@ -341,9 +341,22 @@ class DatabaseManager:
                         row = cursor.fetchone()
                         list.append(temp)
                     return list
-                    
+                  
         return None
 
+
+    @staticmethod
+    def deleteBlob(nome_blob: str, nome_container ):
+        
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute("DELETE * from blob where nomeblob=? AND name_container =?",nome_blob,nome_container)
+                except pyodbc.IntegrityError:
+                    print("Delete error")       
+                    return False    
+                    
+        return True
 
     
 

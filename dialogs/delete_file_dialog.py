@@ -67,7 +67,7 @@ class Delete_file_dialog(ComponentDialog):
         
         self.add_dialog(                # allora problema io inserisco nome file o seleziono la ricerca/ se ricerca devo fare dallo storage fino ad arrivare al fileù
             WaterfallDialog(                # se file faccio spep_file che mi da tutti i file con quel nome ma sappiamo che con i vincoli solo un file sarà
-                "WFDownloadFile", [         #voglio utilizzare spep file per dopo lo step per la ricerca
+                "WFDeleteFile", [         #voglio utilizzare spep file per dopo lo step per la ricerca
                     self.step_initial, # chiedo all'utente nome file o se lo vuole cercare
                     self.option_step,
                     self.step_insert_name_file,
@@ -91,13 +91,13 @@ class Delete_file_dialog(ComponentDialog):
             )
         )
         
-        self.initial_dialog_id="WFDownloadFile"
+        self.initial_dialog_id="WFDeleteFile"
 
     async def step_initial(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         
-        await step_context.context.send_activity("....Sei nella sezione Scarica file... Inizia ad inserire il nome di un file")
+        await step_context.context.send_activity("....Sei nella sezione cancella file... Inizia ad inserire il nome di un file")
         card = HeroCard(
-        text ="Scegli se ricercare per nome o cercare manualmente all'interno dell'archivio",
+        text ="Scegli il file da cancellare, tramite il nome o cerando all'interno dell'archivio",
             buttons = [
                 CardAction(
                     type=ActionTypes.im_back,
@@ -164,7 +164,12 @@ class Delete_file_dialog(ComponentDialog):
                 storage=listaStorageUser[0]
                 await step_context.context.send_activity("File cancellato: ")
                 #cancellare nel db
-                return await step_context.end_dialog()
+                if self.delete_file(blob,storage,self.name_container):
+                    DatabaseManager.deleteBlob(blob,self.name_container)
+                    return await step_context.end_dialog()
+                await step_context.context.send_activity(" File errore eliminazione")
+                return await step_context.reprompt_dialog()
+                
             
             await step_context.context.send_activity(" Archivio corrente non trovato ")
             return await step_context.end_dialog()
@@ -333,7 +338,7 @@ class Delete_file_dialog(ComponentDialog):
 
         #url
         
-        url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
+        #url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
         
         blob_client.delete_blob()
         

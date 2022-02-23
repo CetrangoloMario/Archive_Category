@@ -11,7 +11,7 @@ from bean.user import User
 from bean.storage import Storage
 from bean.container import Container
 from bean.blob import Blob
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__,ContentSettings
 
 from datetime import datetime, timedelta
 from azure.storage.blob import BlobClient, generate_blob_sas, BlobSasPermissions
@@ -22,6 +22,10 @@ from botbuilder.dialogs.prompts import TextPrompt, PromptOptions, ChoicePrompt
 from botbuilder.core import MessageFactory, TurnContext, CardFactory, UserState
 from botbuilder.schema import Attachment, InputHints, SuggestedActions
 from botbuilder.dialogs.choices import Choice
+
+from azure.storage.blob import ResourceTypes, generate_blob_sas,BlobSasPermissions
+from utilities.crypt_decrypt import Crypt_decrypt
+from datetime import datetime, timedelta
 
     
 from botbuilder.schema import (
@@ -45,6 +49,7 @@ from botbuilder.core import MessageFactory, UserState
 
 from azure.mgmt.resource import ResourceManagementClient
 from config import DefaultConfig
+import requests
 
 CONFIG = DefaultConfig
 #main_dialog=MainDialog(CONFIG.CONNECTION_NAME,)
@@ -363,6 +368,7 @@ class Download_file_dialog(ComponentDialog):
         connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
         blob_service_client = BlobServiceClient.from_connection_string(connection_string)
         blob_client= blob_service_client.get_blob_client(container= nome_container, blob=nome_blob )
+        type = blob_client.get_blob_properties().get("content_settings")["content_type"]
         
         sas_blob = generate_blob_sas(account_name=blob_client.account_name, 
                             container_name=nome_container,
@@ -372,16 +378,33 @@ class Download_file_dialog(ComponentDialog):
                             expiry=datetime.utcnow() + timedelta(hours=1))
     
 
-        #url
+
+
+      
         
+
+        """creo la key per decifrare"""
+        pwd = DatabaseManager.getPassword(NAMESTORAGE)
+        key = Crypt_decrypt.make_password(pwd.encode(),b'10')
+
+
+        """processo di decifratura file"""
         url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
         #se dal url me lo leggo nel bot
-        property=blob_client.get_blob_properties()#così
+        #property=blob_client.get_blob_properties()#così
         #dal blob online con le stringhe di proprietà del blob
-        
-        return  Attachment(name=nome_blob, content_type=property.get("content_type"),content_url=url, ) 
+        response = requests.get(url)
+        text = response.content
+        plaintext = Crypt_decrypt.decrypt(text,key)
 
-            #va bene che dici
+        """creo un blob temporaneo per la decifratura"""
+        blob_plain_text = blob_service_client.get_blob_client(container=nome_container+CONFIG.CONTAINER_BLOB_TEMP,blob=nome_blob)
+        #blob_plain_text.upload_blob(plaintext,content_settings=ContentSettings(content_type=type),blob_type="BlockBlob")
+        #come scarico il testo tradotto dovrei creare un blob o posso creare un file e facc attacchment
+        
+        return  Attachment(name=nome_blob, content_type=type, content=blob_plain_text)#content_url=url, ) 
+
+           
 
             #attachment download
         #except Exception():
