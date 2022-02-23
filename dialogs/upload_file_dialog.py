@@ -7,7 +7,6 @@ from aiohttp import request
 import os
 from grapheme import contains, length
 import databaseManager
-from functions.HttpTrigger1 import encrypt
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
 from databaseManager import DatabaseManager

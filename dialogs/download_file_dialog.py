@@ -150,10 +150,12 @@ class Download_file_dialog(ComponentDialog):
     async def step_download(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         
         
-        nomeFile= step_context.result#sia caso ricerca che inserito nome
-        
+        nomeFile = step_context.result#sia caso ricerca che inserito nome
         
         blob=DatabaseManager.getBlobByName(nomeFile)#return lista (lista per il momento contiene solamente un file con i vincoli del db) o None
+
+        iduser=step_context.context.activity.from_property.id
+        step_context.values["nome_archivio"]  = DatabaseManager.get_user(iduser).getNomeRg()
         
         print("blob: ",blob)
 
@@ -168,7 +170,9 @@ class Download_file_dialog(ComponentDialog):
             if listaStorageUser is not None:
                 storage=Storage()
                 storage=listaStorageUser[0]
-                await step_context.context.send_activity(MessageFactory.attachment( self.download_file(nomeFile, storage,self.name_container)))
+                url, type, blob_client = self.download_file(nomeFile,storage,self.name_container,step_context.values["nome_archivio"])
+                await step_context.context.send_activity(MessageFactory.attachment(Attachment(name=nomeFile, content_type=type,content_url=url)))
+                #blob_client.delete_blob() #utilizzare un azure function per cancellare i blob temporaneo
                 return await step_context.end_dialog()
             
             await step_context.context.send_activity(" Archivio corrente non trovato ")
@@ -264,12 +268,12 @@ class Download_file_dialog(ComponentDialog):
         option=step_context.result
         
         if option=="logout": 
-            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
-            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
             await step_context.context.send_activity("Torna al menù principale")
             return await step_context.end_dialog()
         
         iduser=step_context.context.activity.from_property.id
+        list=DatabaseManager.getListStorageByID(iduser)
+        step_context.values["nome_archivio"]  = DatabaseManager.get_user(iduser).getNomeRg()
         lista_container=DatabaseManager.getListContainerbyStorage(option)
         listselect=[]
         
@@ -304,13 +308,11 @@ class Download_file_dialog(ComponentDialog):
         option=step_context.result
         
         if option=="logout": 
-            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
-            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
             await step_context.context.send_activity("Torna al menù principale")
             return await step_context.reprompt_dialog()
         
         iduser=step_context.context.activity.from_property.id
-        lista_file=DatabaseManager.get(option)
+        lista_file=DatabaseManager.getListBlob(option)
         listselect=[]
         
         for x in lista_file:
@@ -342,26 +344,22 @@ class Download_file_dialog(ComponentDialog):
         option=step_context.result
         
         if option=="logout": 
-            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
-            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
             await step_context.context.send_activity("Torna al menù principale")
             return await step_context.reprompt_dialog()
         
         else:
-           return await step_context.prompt(
-                TextPrompt.__name__, PromptOptions(prompt=option)
-            )
+            return await step_context.next(option)
+           
         
         
     
     
     @staticmethod       
-    def download_file(nome_blob: str, storage: Storage(), nome_container: str):
+    def download_file(nome_blob: str, storage: Storage(), nome_container: str,nome_archivio : str):
         
         #oggetto blob_client ho come variabile di istanza, nome container e nome storage in istanza.
         
         NAMESTORAGE=storage.getStorageName()
-        
         #key 
         ACCOUNT_KEY = storage.getKeyStorageDecript(storage.getKeyStorage())
         #try:
@@ -378,11 +376,6 @@ class Download_file_dialog(ComponentDialog):
                             expiry=datetime.utcnow() + timedelta(hours=1))
     
 
-
-
-      
-        
-
         """creo la key per decifrare"""
         pwd = DatabaseManager.getPassword(NAMESTORAGE)
         key = Crypt_decrypt.make_password(pwd.encode(),b'10')
@@ -398,17 +391,30 @@ class Download_file_dialog(ComponentDialog):
         plaintext = Crypt_decrypt.decrypt(text,key)
 
         """creo un blob temporaneo per la decifratura"""
-        blob_plain_text = blob_service_client.get_blob_client(container=nome_container+CONFIG.CONTAINER_BLOB_TEMP,blob=nome_blob)
-        #blob_plain_text.upload_blob(plaintext,content_settings=ContentSettings(content_type=type),blob_type="BlockBlob")
+        blob_plain_text = blob_service_client.get_blob_client(container=nome_archivio+CONFIG.CONTAINER_BLOB_TEMP,blob=nome_blob)
+        blob_plain_text.upload_blob(plaintext,content_settings=ContentSettings(content_type=type),blob_type="BlockBlob")
         #come scarico il testo tradotto dovrei creare un blob o posso creare un file e facc attacchment
-        
-        return  Attachment(name=nome_blob, content_type=type, content=blob_plain_text)#content_url=url, ) 
+        url = Download_file_dialog.get_blob_sas(blob_plain_text.account_name,blob_plain_text.credential.account_key,nome_archivio+CONFIG.CONTAINER_BLOB_TEMP,nome_blob)
+        #return  Attachment(name=nome_blob, content_type=type,content_url=url)
+        print("url: ",url)
+        return [url,type,blob_plain_text]
 
            
 
             #attachment download
         #except Exception():
             #return Exception()
+    
+    @staticmethod
+    def get_blob_sas(account_name,account_key, container_name, blob_name):
+        sas_blob = generate_blob_sas(account_name=account_name, 
+                                container_name=container_name,
+                                blob_name=blob_name,
+                                account_key=account_key,
+                                permission=BlobSasPermissions(read=True),
+                                expiry=datetime.utcnow() + timedelta(hours=1))
+        url = 'https://'+account_name+'.blob.core.windows.net/'+container_name+'/'+blob_name+'?'+sas_blob
+        return url
             
         
         

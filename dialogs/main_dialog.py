@@ -77,6 +77,8 @@ class MainDialog(ComponentDialog):
         self.add_dialog(upload_file_dialog)
 
         self.add_dialog(download_file_dialog)
+
+        self.add_dialog(translate_dialog)
     
         self.add_dialog(
             WaterfallDialog(
