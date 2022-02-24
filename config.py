@@ -24,8 +24,12 @@ class DefaultConfig:
     MULTI_CATEGORY_CLASSIFY_PROJECT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_PROJECT_NAME","classificatordocument")
     MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME","prod")
 
+    """dati per l'azure functions"""
+    AZURE_FUNCTIONS_ENDPOINT = os.environ.get("AZURE_FUNCTIONS_ENDPOINT","https://cancelblob.azurewebsites.net/api/DeleteBlob")
+
     """dati per il servizio di traduzione"""
     AZURE_TRANSLATION_KEY = os.environ.get("AZURE_TRANSLATION_KEY","5e24dc0522d746c5a91240d7fb125144")
+    AZURE_TRANSLATION_ENDPOINT = os.environ.get(" AZURE_TRANSLATION_ENDPOINT","https://traduzionebot.cognitiveservices.azure.com/")
 
     CONVERT_API_SECRET = "i7V5qBfDmNJisc7Z"
 

@@ -1,48 +1,32 @@
-from asyncore import write
-from audioop import add
-from distutils.file_util import write_file
-from lib2to3.pgen2.grammar import opmap
-from multiprocessing.sharedctypes import Value
-from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, PromptValidatorContext, DialogTurnStatus, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
-from bean import container
-from bean import user
-from databaseManager import DatabaseManager
-from bean.user import User
-from bean.storage import Storage
-from bean.container import Container
+from multiprocessing.connection import wait
+from unicodedata import name
+from botbuilder.dialogs import ComponentDialog, DialogTurnResult, PromptOptions, TextPrompt, WaterfallDialog, WaterfallStepContext
 from bean.blob import Blob
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__,ContentSettings
-from utilities.crypto import Crypto
-from botbuilder.core import BotFrameworkAdapter
-from botbuilder.dialogs.prompts import TextPrompt, PromptOptions, ChoicePrompt
-from botbuilder.core import MessageFactory, TurnContext, CardFactory, UserState
-from botbuilder.schema import Attachment, InputHints, SuggestedActions
-from botbuilder.dialogs.choices import Choice
+from databaseManager import DatabaseManager
+from azure.storage.blob import BlobServiceClient, BlobClient, __version__,ContentSettings, generate_blob_sas,BlobSasPermissions,generate_container_sas
+from botbuilder.dialogs.prompts import TextPrompt, PromptOptions
+from botbuilder.core import MessageFactory, CardFactory
 from botbuilder.schema import (
-    ChannelAccount,
     HeroCard,
-    CardImage,
     CardAction,
     ActionTypes,
+    Attachment,
 )
-from azure.storage.blob import ResourceTypes, generate_blob_sas,BlobSasPermissions
 from utilities.crypt_decrypt import Crypt_decrypt
-from datetime import datetime, timedelta
 
 import uuid, json
 
 from botbuilder.dialogs.prompts import (
     TextPrompt,
-    NumberPrompt,
-    ChoicePrompt,
-    ConfirmPrompt,
-    AttachmentPrompt,
-    PromptOptions,
-    PromptValidatorContext,
+    PromptOptions, 
 )
-
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.translation.document import DocumentTranslationClient,DocumentTranslationInput,TranslationTarget
 from config import DefaultConfig
 import requests
+import datetime
+from azure.core.exceptions import ResourceExistsError
+
 
 CONFIG = DefaultConfig()
 
@@ -197,29 +181,63 @@ class Translate_Dialog(ComponentDialog):
         text = response.content
         plaintext = Crypt_decrypt.decrypt(text,key)
 
-        """creo un blob temporaneo per la decifratura"""
-        blob_plain_text = self.blob_service_client.get_blob_client(container=nome_archivio+CONFIG.CONTAINER_BLOB_TEMP,blob=nome_blob)
-        blob_plain_text.upload_blob(plaintext,content_settings=ContentSettings(content_type=type),blob_type="BlockBlob")
-
-
-        """translate su blob temporaneo"""
-        """provare domani la traduzione dei documenti non questa qui testuale"""
-        url_sas_source = self.get_blob_sas(blob_plain_text.account_name,blob_plain_text.credential.account_key,nome_archivio+CONFIG.CONTAINER_BLOB_TEMP,nome_blob)
-        print("url sorgente: ",url_sas_source)
-        """creo un blob temporaneo per la destinazione"""
-        blob_destination = self.blob_service_client.get_blob_client(container=nome_archivio+CONFIG.CONTAINER_BLOB_TEMP,blob="translate-"+nome_blob)
-        #blob_destination.upload_blob(" ")
-        url_sas_target = self.get_blob_sas(blob_destination.account_name,blob_destination.credential.account_key,nome_archivio+CONFIG.CONTAINER_BLOB_TEMP,"translate-"+nome_blob)
-        print("url target: ",url_sas_target)
-
         """translate"""
-        #self.translate_document(lingua,url_sas_source,url_sas_target)
-        #self.invia_richiesta(lingua,url_sas_source,url_sas_target)
-        self.translate_sdk(lingua,url_sas_source,url_sas_target)
+        source_container = self.create_container(self.blob_service_client,nome_archivio+CONFIG.CONTAINER_BLOB_TEMP) #ritorna il container temporaneo
+        target_container = self.create_container(self.blob_service_client,"translation-target-container") #creo il container translator oppure restituisce il container translator
 
-        print("testo tradotto: ",blob_destination.download_blob().readall().decode("UTF-8"))
+        source_container.upload_blob(name=nome_blob,data=plaintext,content_settings=ContentSettings(content_type=type),blob_type="BlockBlob") #carico il file cifrato
+        source_container_sas_url = self.generate_sas_url(blob_client,source_container, permissions="rl")
+        target_container_sas_url = self.generate_sas_url(blob_client,target_container, permissions="wl")
+
+        if self.translate_sdk(lingua,source_container_sas_url,target_container_sas_url): #effettuo la traduzione
+            url = self.get_blob_sas(blob_client.account_name,blob_client.credential.account_key,"translation-target-container",nome_blob)
+            await step_context.context.send_activity("Questo è il documento tradotto....")
+            await step_context.context.send_activity(MessageFactory.attachment(Attachment(name=nome_blob, content_type=type,content_url=url)))
+            print("key: ",blob_client.credential.account_key)
+            r = requests.get(""+CONFIG.AZURE_FUNCTIONS_ENDPOINT+"?nome_storage="+name_storage+"&container=translation-target-container&"+"blob="+nome_blob+"&accountkey="+blob_client.credential.account_key)
+            print("risposta: ",r.headers,r.status_code,r.reason)
+            source_container.delete_blob(blob=nome_blob) #cancello il blob temporaneo
+            return await step_context.end_dialog()
+        source_container.delete_blob(blob=nome_blob) #cancello il blob temporaneo anche in caso in cui la traduzione da errore
+        await step_context.context.send_activity("Impossibile tradurre il file...")
+        return await step_context.begin_dialog("WFDialogTranslate")
+
+
+
+        
+    
+
+       
+
+
+    @staticmethod
+    def create_container(blob_service_client, container_name):
+        try:
+            container_client = blob_service_client.create_container(container_name)
+            print("Creating container: {}".format(container_name))
+        except ResourceExistsError:
+            print("The container with name {} already exists".format(container_name))
+            container_client = blob_service_client.get_container_client(container=container_name)
+        return container_client
+
 
     
+    @staticmethod
+    def generate_sas_url(blobclient,container, permissions):
+        sas_token = generate_container_sas(
+            account_name=blobclient.account_name,
+            container_name=container.container_name,
+            account_key=blobclient.credential.account_key,
+            permission=permissions,
+            expiry=datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        )
+        storage_endpoint = "https://"+blobclient.account_name+".blob.core.windows.net/"
+        print("storage endpoint: ",storage_endpoint)
+        container_sas_url = storage_endpoint + container.container_name + "?" + sas_token
+        print("Generating {} SAS URL".format(container.container_name))
+        return container_sas_url
+
+
     @staticmethod
     def get_blob_sas(account_name,account_key, container_name, blob_name):
         sas_blob = generate_blob_sas(account_name=account_name, 
@@ -227,150 +245,26 @@ class Translate_Dialog(ComponentDialog):
                                 blob_name=blob_name,
                                 account_key=account_key,
                                 permission=BlobSasPermissions(read=True),
-                                expiry=datetime.utcnow() + timedelta(hours=1))
+                                expiry=datetime.datetime.utcnow() + datetime.timedelta(hours=1))
         url = 'https://'+account_name+'.blob.core.windows.net/'+container_name+'/'+blob_name+'?'+sas_blob
         return url
 
-    
-    @staticmethod
-    def translate(lingua, text):
-        # Add your subscription key and endpoint
-        subscription_key = CONFIG.AZURE_TRANSLATION_KEY
-        endpoint = "https://api.cognitive.microsofttranslator.com"
-
-        # Add your location, also known as region. The default is global.
-        #This is required if using a Cognitive Services resource.
-        location = "westeurope"
-
-        path = '/translate'
-        constructed_url = endpoint + path
-
-        params = {
-                'api-version': '3.0',
-                'to': lingua
-            }
-
-        constructed_url = endpoint + path
-
-        headers = {
-                'Ocp-Apim-Subscription-Key': subscription_key,
-                'Ocp-Apim-Subscription-Region': location,
-                'Content-type': 'application/json',
-                'X-ClientTraceId': str(uuid.uuid4())
-            }
-
-            # You can pass more than one object in body.
-        body = [{
-                'text': text
-            }]
-
-        request = requests.post(constructed_url, params=params, headers=headers, json=body)
-        response = request.text
-        data = json.loads(response)
-        return data[0]["translations"][0]["text"]
-    
-    @staticmethod
-    def translate_document(lingua, sas_url_source, sas_url_target):
-        endpoint = "https://traduzionebot.cognitiveservices.azure.com/translator/text/batch/v1.0"
-        subscription_key = CONFIG.AZURE_TRANSLATION_KEY
-        path = '/batches'
-        constructed_url = endpoint + path
-        location = "westeurope"
-
-        headers = {
-                'Ocp-Apim-Subscription-Key': subscription_key,
-                'Ocp-Apim-Subscription-Region': location,
-                'Content-type': 'application/json',
-            }
-        
-        payload= {
-    "inputs": [
-        {
-            "storageType": "File",
-            "source": {
-                "sourceUrl": sas_url_source,
-                "storageSource": "AzureBlob"
-            },
-            "targets": [
-                {
-                    "targetUrl": "https://manlio58287.blob.core.windows.net/manlio-temp?sp=r&st=2022-02-23T16:28:25Z&se=2022-02-24T00:28:25Z&spr=https&sv=2020-08-04&sr=c&sig=Kqixcsy4uGv54ka8PQNg3cONq3lVAwNkSmwe7LjLztQ%3D",
-                    "language": lingua,
-                    "storageSource": "AzureBlob",
-                    "category": "general"
-                }
-            ]
-        }
-    ]
-}
-        response = requests.post(constructed_url, headers=headers, json=payload)
-        print("body: ",response.request.body)
-        print("url request: ",response.request.url)
-        print("dict: ",response.request.__dict__)
-
-        print(f'response status code: {response.status_code}\nresponse status: {response.reason}\nresponse headers: {response.headers}')
-
-
-    @staticmethod
-    def invia_richiesta(lingua, sas_url_source, sas_url_target):
-        host = 'https://traduzionebot.cognitiveservices.azure.com/translator/text/batch/v1.0/batches'
-        subscriptionKey =  CONFIG.AZURE_TRANSLATION_KEY
-        
-        payload= {
-    "inputs": [
-        {
-            "storageType": "File",
-            "source": {
-                "sourceUrl": sas_url_source,
-                "storageSource": "AzureBlob"
-            },
-            "targets": [
-                {
-                    "targetUrl": sas_url_target,
-                    "language": lingua,
-                    "storageSource": "AzureBlob",
-                    "category": "general"
-                }
-            ]
-        }
-    ]
-}
-        headers = {
-        'Ocp-Apim-Subscription-Key': subscriptionKey,
-        'Ocp-Apim-Subscription-Region': "westeurope",
-        'Content-type': 'application/json'
-        }
-        response = requests.post(host, headers=headers, json=payload)
-        print(f'response status code: {response.status_code}\nresponse status: {response.reason}\nresponse headers: {response.headers}')
 
     @staticmethod
     def translate_sdk(lingua, source, destination):
-        import os
-        from azure.core.credentials import AzureKeyCredential
-        from azure.ai.translation.document import DocumentTranslationClient
-
-        client = DocumentTranslationClient("https://traduzionebot.cognitiveservices.azure.com/", AzureKeyCredential(CONFIG.AZURE_TRANSLATION_KEY))
-
-        poller = client.begin_translation(source, "https://manlio58287.blob.core.windows.net/manlio-temp?sp=r&st=2022-02-23T17:49:13Z&se=2022-02-24T01:49:13Z&spr=https&sv=2020-08-04&sr=c&sig=YzX6wLt40nVcZlkr9Eo5bAYAeYya4BWCl%2BSZ%2ByCJ4Qg%3D", lingua)
+        client = DocumentTranslationClient(CONFIG.AZURE_TRANSLATION_ENDPOINT, AzureKeyCredential(CONFIG.AZURE_TRANSLATION_KEY))
+        poller = client.begin_translation(source, destination, lingua)
         result = poller.result()
-
-        print("Status: {}".format(poller.status()))
-        print("Created on: {}".format(poller.details.created_on))
-        print("Last updated on: {}".format(poller.details.last_updated_on))
-        print("Total number of translations on documents: {}".format(poller.details.documents_total_count))
-
-        print("\nOf total documents...")
-        print("{} failed".format(poller.details.documents_failed_count))
-        print("{} succeeded".format(poller.details.documents_succeeded_count))
-
         for document in result:
             print("Document ID: {}".format(document.id))
             print("Document status: {}".format(document.status))
             if document.status == "Succeeded":
-                print("Source document location: {}".format(document.source_document_url))
-                print("Translated document location: {}".format(document.translated_document_url))
-                print("Translated to language: {}\n".format(document.translated_to))
+                return True
             else:
-                print("Error Code: {}, Message: {}\n".format(document.error.code, document.error.message))
+                return False
+        
+
+
 
 
             
