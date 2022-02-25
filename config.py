@@ -13,9 +13,9 @@ class DefaultConfig:
     """ Bot Configuration """
 
     PORT = 3978
-    APP_ID = os.environ.get("MicrosoftAppId", "77956cb5-e08b-42f7-b137-7625e2763199")
+    APP_ID = os.environ.get("MicrosoftAppId", "e22a9721-53fd-43b6-b910-a9b2ec045e56")
     APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "AtLeastSixteenCharacters_0")
-    CONNECTION_NAME = os.environ.get("ConnectionName", "ManlioConnection2")
+    CONNECTION_NAME = os.environ.get("ConnectionName", "archivecategoryconnection")
 
 
     """dati per il classificatore"""
@@ -36,7 +36,7 @@ class DefaultConfig:
 
 
     #dati per crittografare il db utilizzaimo l'algoritmo AES (CTR Block Mode)
-    SECRET_PASSWORD = "manliokey" #settare secret key in azure
+    SECRET_PASSWORD = "asdf9324dasf90324" #settare secret key in azure
     SECRET_PASSWORD_SALT = "8" #os.urandom(16) 
     SECRET_IV = 256 #secrets.randbits(256) 
 
@@ -47,9 +47,9 @@ class DefaultConfig:
 
 
     #dati di configurazione per l'utilizzo del database SQ
-    SERVERDB = 'db-test-archive.database.windows.net'
+    SERVERDB = 'db-test-archive1.database.windows.net'
     DATABASEDB = 'Archivecategorydb'
     USERNAMEDB = 'azureuser'
-    PASSWORDDB = 'Mansant#198'
+    PASSWORDDB = 'adsf87#fasdf'
     DRIVERDB= '{ODBC Driver 17 for SQL Server}'
     
