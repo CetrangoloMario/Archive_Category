@@ -24,7 +24,7 @@ create table container (
 ) 
 go
 create table blob (
-  nomeblob varchar(20) not null constraint blob_pk primary key nonclustered,
+  nomeblob varchar(80) not null constraint blob_pk primary key nonclustered,
   name_container varchar(30) not null ,
   crypto varchar(50) DEFAULT null,
   comprimere varchar(50) DEFAULT null,

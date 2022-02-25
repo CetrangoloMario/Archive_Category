@@ -95,7 +95,7 @@ class Delete_file_dialog(ComponentDialog):
 
     async def step_initial(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         
-        await step_context.context.send_activity("....Sei nella sezione cancella file... Inizia ad inserire il nome di un file")
+        await step_context.context.send_activity("....Sei nella sezione cancella file....")
         card = HeroCard(
         text ="Scegli il file da cancellare, tramite il nome o cerando all'interno dell'archivio",
             buttons = [
@@ -223,12 +223,9 @@ class Delete_file_dialog(ComponentDialog):
         option=step_context.result
         
         if option=="logout": 
-            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
-            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
             await step_context.context.send_activity("Torna al menù principale")
             return await step_context.end_dialog()
         
-        iduser=step_context.context.activity.from_property.id
         lista_container=DatabaseManager.getListContainerbyStorage(option)
         listselect=[]
         
@@ -263,12 +260,9 @@ class Delete_file_dialog(ComponentDialog):
         option=step_context.result
         
         if option=="logout": 
-            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
-            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
             await step_context.context.send_activity("Torna al menù principale")
             return await step_context.reprompt_dialog()
         
-        iduser=step_context.context.activity.from_property.id
         lista_file=DatabaseManager.get(option)
         listselect=[]
         
@@ -301,21 +295,17 @@ class Delete_file_dialog(ComponentDialog):
         option=step_context.result
         
         if option=="logout": 
-            bot_adapter: BotFrameworkAdapter = step_context.context.adapter
-            await bot_adapter.sign_out_user(step_context.context, self.connection_name)
             await step_context.context.send_activity("Torna al menù principale")
             return await step_context.reprompt_dialog()
         
         else:
-           return await step_context.prompt(
-                TextPrompt.__name__, PromptOptions(prompt=option)
-            )
+            return await step_context.next(option)
         
         
     
     #Cancella file, cancella db
     @staticmethod       
-    def delete_file(nome_blob: str, storage: Storage(), nome_container: str):
+    def delete_file(nome_blob: str, storage: Storage, nome_container: str):
         
         #oggetto blob_client ho come variabile di istanza, nome container e nome storage in istanza.
         
@@ -327,19 +317,6 @@ class Delete_file_dialog(ComponentDialog):
         connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={NAMESTORAGE};AccountKey={ACCOUNT_KEY}"
         blob_service_client = BlobServiceClient.from_connection_string(connection_string)
         blob_client= blob_service_client.get_blob_client(container= nome_container, blob=nome_blob )
-        
-        sas_blob = generate_blob_sas(account_name=blob_client.account_name, 
-                            container_name=nome_container,
-                            blob_name=nome_blob,
-                            account_key=ACCOUNT_KEY,
-                            permission=BlobSasPermissions(read=True),
-                            expiry=datetime.utcnow() + timedelta(hours=1))
-    
-
-        #url
-        
-        #url = 'https://'+blob_client.account_name+'.blob.core.windows.net/'+nome_container+'/'+nome_blob+'?'+sas_blob
-        
         blob_client.delete_blob()
         
         return  True
