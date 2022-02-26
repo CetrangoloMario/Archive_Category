@@ -87,18 +87,25 @@ class RegistrationDialog(CancelAndHelpDialog): #cancel_and_help_fialog
 
 
                 utente = User(iduser,rg,listaStorage)
-                DatabaseManager.insert_user(utente)
-                if not DatabaseManager.insert_storage(storage): #inserimento storage nel database
-                    DatabaseManager.delete_storage(storage)
+                if DatabaseManager.insert_user(utente):#m if togli
+                    if not DatabaseManager.insert_storage(storage): #inserimento storage nel database
+                        DatabaseManager.delete_user(utente)
+                else:#m
+                    await step_context.context.send_activity("utente non inserito... ricominciamo insieme... ritenta sarai più fortunato")#m
+                    return await step_context.reprompt_dialog()#m
                 
                 CONTAINER_TEMP = rg+CONFIG.CONTAINER_BLOB_TEMP
-                DatabaseManager.insert_container(Container(CONTAINER_TEMP,storage.getStorageName()))
+                if not DatabaseManager.insert_container(Container(CONTAINER_TEMP,storage.getStorageName())):
+                    await step_context.context.send_activity("container temporaneo non inserito... ricominciamo insieme... ritenta sarai più fortunato")#m
+                    DatabaseManager.delete_user(utente)
+                    DatabaseManager.delete_storage(storage)
+                    return await step_context.reprompt_dialog()#m
 
 
                 await step_context.context.send_activity("Registrazione Completata !!!")
                 return await step_context.end_dialog()
                 #step_context.values["utente"] = utente
-                print("account creato\n ")
+                
         else:
             await step_context.context.send_activity("Nome archivio esistente !!!")
             return await step_context.begin_dialog("WFDialog")

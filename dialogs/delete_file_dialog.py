@@ -149,7 +149,7 @@ class Delete_file_dialog(ComponentDialog):
         
         blob=DatabaseManager.getBlobByName(nomeFile)#return lista (lista per il momento contiene solamente un file con i vincoli del db) o None
         
-        print("blob: ",blob)
+        #print("blob: ",blob)
 
         if blob is None:
             await step_context.context.send_activity(" File non trovato ")

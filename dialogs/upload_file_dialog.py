@@ -3,6 +3,7 @@ from cgitb import text
 from distutils.command.config import config
 from fnmatch import translate
 from pydoc import plain
+from sqlite3 import IntegrityError
 from aiohttp import request
 import os
 from grapheme import contains, length
@@ -111,17 +112,23 @@ class Upload_file_dialog(ComponentDialog):
         iduser=step_context.context.activity.from_property.id
 
         user= DatabaseManager.get_user(iduser)
+        
+        if user is None:
+            return await step_context.cancel_all_dialogs()
+        
         RG=user.getNomeRg()
         #print (RG,"")
         
         """recupero lista storage account"""
+        
         list=DatabaseManager.getListStorageByID(iduser)
+        if list is None:
+            await step_context.context.send_activity(" Errore Non trovata lista Archivio ripeti login")
+            return await step_context.cancel_all_dialogs()
+        
         #Devo far selezionare storage account nuovo step
         listselect=[]
         #print(list,"lista")
-
-
-
         for x in list:
             object=CardAction(
                 type=ActionTypes.im_back,
@@ -177,20 +184,31 @@ class Upload_file_dialog(ComponentDialog):
         contenuto = ris.content
         #file_bytes.close()
 
-
-        print("file: ",file)
+        #print("file: ",file)
         step_context.values["document"] = file
         nome_blob = file.__dict__["name"] #prelevare il nome del file
-        print("Nome blob: ",nome_blob)
+        #print("Nome blob: ",nome_blob)
+        if nome_blob is None:
+            await step_context.context.send_activity("Errore Name File rieffettua upload")
+            return await step_context.reprompt_dialog()
+        
         step_context.values["name-blob"] = nome_blob #salvo in sessione
 
         iduser=step_context.context.activity.from_property.id
-        RG = databaseManager.DatabaseManager.get_user(iduser)
-        self.rg = RG.getNomeRg()  #salvo il container temporaneo
+        user = databaseManager.DatabaseManager.get_user(iduser)
+        if user is None:
+            await step_context.context.send_activity("Errore prelevamento dati utente Session Expired")
+            return await step_context.cancel_all_dialogs()
+        
+        self.rg = user.getNomeRg()  #salvo il container temporaneo
         NAMESTORAGE=step_context.values["select_storage"]
         self.nome_storage = NAMESTORAGE
         #key
         storagetemp = DatabaseManager.getStorageByNome(NAMESTORAGE)
+        
+        if storagetemp is None: 
+            await step_context.context.send_activity("Errore prelevamento Archivio temporaneo")
+            return await step_context.cancel_all_dialogs()
         
         ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
 
@@ -198,7 +216,7 @@ class Upload_file_dialog(ComponentDialog):
         self.blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
 
         #modificare (id , storage accout selezionato) lista container
-        name_container_temp= DatabaseManager.getContainerbyName(NAMESTORAGE,RG.getNomeRg()+CONFIG.CONTAINER_BLOB_TEMP)
+        name_container_temp= DatabaseManager.getContainerbyName(NAMESTORAGE,user.getNomeRg()+CONFIG.CONTAINER_BLOB_TEMP)
         step_context.values["name-container"] = name_container_temp.getNameContainer()
         try:
             blob_client = self.blob_service_client.get_blob_client(container=name_container_temp.getNameContainer(), blob=nome_blob)
@@ -206,11 +224,9 @@ class Upload_file_dialog(ComponentDialog):
         except AttributeError:
             await step_context.context.send_activity("....File duplicato....")
             return await step_context.reprompt_dialog()
-        print("url: ",file.__dict__["content_url"])
-
+        #print("url: ",file.__dict__["content_url"])
 
         blob_client.upload_blob(contenuto,blob_type="BlockBlob",content_settings=ContentSettings(content_type=file.__dict__["content_type"]))
-    
 
         await step_context.context.send_activity("....File caricato con successo nel container temporaneo.....")
 
@@ -228,7 +244,7 @@ class Upload_file_dialog(ComponentDialog):
         self.blob = blob #salvo in una variabile d'istanza il nome del file inserito
         blob_client = self.blob_service_client.get_blob_client(container=container,blob=blob) #prelevo il blob appena caricato
         property = blob_client.get_blob_properties()
-        #fare if se non è txt file chiamara un azure function in cui converte il file e restituisce il contenuto
+        #fare if se non è txt file chiamare un azure function in cui converte il file e restituisce il contenuto
         if property.get("content_settings")["content_type"] == "text/plain":
             text = blob_client.download_blob().readall().decode("UTF-8") 
         else:
@@ -340,10 +356,10 @@ class Upload_file_dialog(ComponentDialog):
 
         if step_context.result is None:
             nome_categoria=self.category
-            print("nome categoria: ",nome_categoria)
+            #print("nome categoria: ",nome_categoria)
         else:
             nome_categoria= step_context.result
-            print("nome categoria else: ",nome_categoria)
+            #print("nome categoria else: ",nome_categoria)
             self.category=nome_categoria
             
         #await step_context.context.send_activity("Creiamo la nuova categoria: "+nome_categoria)
@@ -352,8 +368,12 @@ class Upload_file_dialog(ComponentDialog):
         if not self.category in listacontainer:
             self.blob_service_client.create_container(nome_categoria)
             container = Container(nome_categoria,step_context.values["select_storage"])
-            DatabaseManager.insert_container(container)
-            await step_context.context.send_activity("La categoria è stata creata ")
+            
+            if DatabaseManager.insert_container(container):
+                await step_context.context.send_activity("La categoria è stata creata ")
+            else:
+                await step_context.context.send_activity("La categoria non è stata creata ")
+            
         else:
             await step_context.context.send_activity("la categoria gia è presente")
 
@@ -382,12 +402,20 @@ class Upload_file_dialog(ComponentDialog):
         blob_client.upload_blob(cipher,content_settings=ContentSettings(content_type=type),blob_type="BlockBlob")
 
         """cancello il blob temporaneo"""
-        blob_temp.delete_blob()
-    
+        try:
+            blob_temp.delete_blob()
+        except:
+            await step_context.context.send_activity("cancellazione file temporaneo non eseguita. Sarà svolta in seguito")
+            
+            
         """sincronizzare con il database"""
         blob=Blob(self.blob,self.category,None,None)
-        DatabaseManager.insert_blob(blob)
-        await step_context.context.send_activity("Upload del file completato...torna al menu principale")
+        
+        if DatabaseManager.insert_blob(blob):
+            await step_context.context.send_activity("Upload del file completato...torna al menu principale")
+        else:
+            await step_context.context.send_activity("Sincronizzazione Database non effettuata")
+        
         return await step_context.end_dialog() #ritorna al main dialog step final step
         
 

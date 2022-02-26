@@ -118,6 +118,20 @@ class DatabaseManager:
                 
         return None
 
+    
+    @staticmethod
+    def delete_user(arc: User):
+        register = False
+        with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute("Delete utente Where iduser=?", arc.getIdUser())
+                    register=True
+                except Exception:
+                    register=False
+
+                #row = cursor.fetchone() 
+        return register
 
     @staticmethod
     def delete_storage(arc: Storage):
@@ -155,9 +169,8 @@ class DatabaseManager:
                 try:
                     cursor.execute("INSERT INTO container VALUES (?,?)",container.getNameContainer(),container.getNameStorage())
                 except pyodbc.IntegrityError:
-                    register=False
                     print("integrity error")
-                    return register
+                    return False
                 #row = cursor.fetchone() 
         return register
     

@@ -125,7 +125,7 @@ class MainDialog(ComponentDialog):
                 #nome resource group (nomr archivio ) preleva da db
                 loginuser = DatabaseManager.get_user(iduser)
                 if loginuser is not None:
-                    print(loginuser.getNomeRg)
+                    #print(loginuser.getNomeRg)
                     step_context.values["RG"] = loginuser.getNomeRg()
                 await step_context.context.send_activity(MessageFactory.text('''Login effetuato'''))
                 return await step_context.next([])
@@ -157,8 +157,8 @@ class MainDialog(ComponentDialog):
             ),
             CardAction(
                 type=ActionTypes.im_back,
-                title ="Carica File",
-                value="caricaFile"
+                title ="Upload File",
+                value="uploadFile"
             ),
             CardAction(
                 type=ActionTypes.im_back,
@@ -167,13 +167,13 @@ class MainDialog(ComponentDialog):
             ),
             CardAction(
                 type=ActionTypes.im_back,
-                title ="Scarica File",
-                value="scaricaFile"
+                title ="Download File",
+                value="downloadFile"
             ),
             CardAction(
                 type=ActionTypes.im_back,
-                title ="Cancella File",
-                value="cancellaFile"
+                title ="Delete File",
+                value="deleteFile"
             )
         ],   
         )
@@ -193,17 +193,17 @@ class MainDialog(ComponentDialog):
             await step_context.context.send_activity(resp)
             return await step_context.next([])
 
-        if option=="caricaFile":
+        if option=="uploadFile":
             await step_context.context.send_activity("hai scelto caricafile")
             return await step_context.begin_dialog(self.upload_file_dialog)
         
         if option=="traduzione":
             await step_context.context.send_activity("hai scelto traduzione")
             return await step_context.begin_dialog(self.translate_dialog)
-        if option=="scaricaFile":
+        if option=="downloadFile":
             await step_context.context.send_activity("hai scelto scarica file")
             return await step_context.begin_dialog(self._download_file_dialog)
-        if option=="cancellaFile":
+        if option=="deleteFile":
             await step_context.context.send_activity("hai scelto cancella file")
             return await step_context.begin_dialog(self.delete_file_dialog_id)
         if option=="logout": 
