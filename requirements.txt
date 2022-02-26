@@ -14,8 +14,9 @@ pyaes
 pbkdf2
 azure-storage-blob
 botbuilder-ai>=4.14.0
-httplib
-azure-ai-textanalytics
+azure-ai-textanalytics==5.2.0b2
 azure-functions
 pycrypto
 convertapi
+azure-ai-translation-document
+setuptools

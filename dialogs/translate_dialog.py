@@ -99,7 +99,7 @@ class Translate_Dialog(ComponentDialog):
             object=CardAction(
                 type=ActionTypes.post_back,
                 title =x.getName(),
-                value=x.getName()+" "+x.getNameContainer(),
+                value=x.getName()+"/#/"+x.getNameContainer(),
             )
             listselect.append(object)
         
@@ -115,7 +115,7 @@ class Translate_Dialog(ComponentDialog):
         )
     
     async def step_lingua(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        nome_blob, name_container = step_context.result.split()
+        nome_blob, name_container = step_context.result.split("/#/")
 
         print(nome_blob)
         print(name_container)
@@ -144,7 +144,7 @@ class Translate_Dialog(ComponentDialog):
             CardAction(
                 type=ActionTypes.im_back,
                 title ="Cinese",
-                value="zh-"
+                value="lzh"
             ),
             CardAction(
                 type=ActionTypes.im_back,

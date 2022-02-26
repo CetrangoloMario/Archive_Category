@@ -20,16 +20,16 @@ class DefaultConfig:
 
     """dati per il classificatore"""
     AZURE_TEXT_ANALYTICS_ENDPOINT = os.environ.get("AZURE_TEXT_ANALYTICS_ENDPOINT","https://westeurope.api.cognitive.microsoft.com/")
-    AZURE_TEXT_ANALYTICS_KEY = os.environ.get("AZURE_TEXT_ANALYTICS_KEY","6219ebc9404a4bb698b9bcb55da134f5")
+    AZURE_TEXT_ANALYTICS_KEY = os.environ.get("AZURE_TEXT_ANALYTICS_KEY","dd6729a862fd44a083e5f49660f33564")
     MULTI_CATEGORY_CLASSIFY_PROJECT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_PROJECT_NAME","classificatordocument")
     MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME","prod")
 
     """dati per l'azure functions"""
-    AZURE_FUNCTIONS_ENDPOINT = os.environ.get("AZURE_FUNCTIONS_ENDPOINT","https://cancelblob.azurewebsites.net/api/DeleteBlob")
+    AZURE_FUNCTIONS_ENDPOINT = os.environ.get("AZURE_FUNCTIONS_ENDPOINT","https://deleteblob1.azurewebsites.net/api/deleteblob")
 
     """dati per il servizio di traduzione"""
-    AZURE_TRANSLATION_KEY = os.environ.get("AZURE_TRANSLATION_KEY","5e24dc0522d746c5a91240d7fb125144")
-    AZURE_TRANSLATION_ENDPOINT = os.environ.get(" AZURE_TRANSLATION_ENDPOINT","https://traduzionebot.cognitiveservices.azure.com/")
+    AZURE_TRANSLATION_KEY = os.environ.get("AZURE_TRANSLATION_KEY","b6d97ddb13154aea9a6c712b22f2483b")
+    AZURE_TRANSLATION_ENDPOINT = os.environ.get("AZURE_TRANSLATION_ENDPOINT","https://traduzionebot1.cognitiveservices.azure.com/")
 
     CONVERT_API_SECRET = "i7V5qBfDmNJisc7Z"
 

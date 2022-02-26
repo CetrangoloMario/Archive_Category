@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+from ast import Delete
 from cmath import log
 from distutils.log import Log
 from botbuilder.dialogs import ComponentDialog, DialogContext, DialogTurnResult, DialogTurnStatus, WaterfallDialog, WaterfallStepContext
@@ -27,6 +28,7 @@ from botbuilder.core import BotFrameworkAdapter
 from dialogs.upload_file_dialog import Upload_file_dialog
 from dialogs.download_file_dialog import Download_file_dialog
 from dialogs.translate_dialog import Translate_Dialog
+from dialogs.delete_file_dialog import Delete_file_dialog
 from bean import *
 import os
 import json
@@ -36,6 +38,7 @@ registration_dialog = RegistrationDialog()
 upload_file_dialog  = Upload_file_dialog()
 download_file_dialog = Download_file_dialog() 
 translate_dialog = Translate_Dialog()
+delete_file_dialog=Delete_file_dialog()
 
 class MainDialog(ComponentDialog):
     
@@ -46,6 +49,7 @@ class MainDialog(ComponentDialog):
         self.upload_file_dialog = upload_file_dialog.id
         self._download_file_dialog = download_file_dialog.id
         self.translate_dialog = translate_dialog.id
+        self.delete_file_dialog_id= delete_file_dialog.id
     
         self.add_dialog(
             OAuthPrompt(
@@ -79,6 +83,8 @@ class MainDialog(ComponentDialog):
         self.add_dialog(download_file_dialog)
 
         self.add_dialog(translate_dialog)
+        
+        self.add_dialog(delete_file_dialog)
     
         self.add_dialog(
             WaterfallDialog(
@@ -163,6 +169,11 @@ class MainDialog(ComponentDialog):
                 type=ActionTypes.im_back,
                 title ="Scarica File",
                 value="scaricaFile"
+            ),
+            CardAction(
+                type=ActionTypes.im_back,
+                title ="Cancella File",
+                value="cancellaFile"
             )
         ],   
         )
@@ -190,9 +201,11 @@ class MainDialog(ComponentDialog):
             await step_context.context.send_activity("hai scelto traduzione")
             return await step_context.begin_dialog(self.translate_dialog)
         if option=="scaricaFile":
-            await step_context.context.send_activity("hai scelto visualizzafile")
+            await step_context.context.send_activity("hai scelto scarica file")
             return await step_context.begin_dialog(self._download_file_dialog)
-
+        if option=="cancellaFile":
+            await step_context.context.send_activity("hai scelto cancella file")
+            return await step_context.begin_dialog(self.delete_file_dialog_id)
         if option=="logout": 
             bot_adapter: BotFrameworkAdapter = step_context.context.adapter
             await bot_adapter.sign_out_user(step_context.context, self.connection_name)
