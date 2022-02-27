@@ -176,7 +176,7 @@ class Upload_file_dialog(ComponentDialog):
             )
     
     async def upload(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        print("sto in upload")
+        #print("sto in upload")
         file = step_context.result[0]  #prelevo il file è un dict
         
         ris = requests.get(file.__dict__["content_url"])
@@ -253,7 +253,7 @@ class Upload_file_dialog(ComponentDialog):
             url = self.get_blob_sas(blob_client.account_name,blob_client.credential.account_key,container,blob)
             try:
                 file=convertapi.convert('txt', {'File': url}, from_format = ext[1:]) #.save_files('./utilities/document.txt')# prendere contenuto
-                print(file.file.url)
+                #print(file.file.url)
                 ris = requests.get(file.file.url)
                 text = ris.content.decode("UTF-8")
             except convertapi.exceptions.ApiError:
@@ -288,6 +288,7 @@ class Upload_file_dialog(ComponentDialog):
     
     async def step_choice_category(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         risposta = step_context.result
+        nome_container_temp=step_context.values["name-container"]
         nome_storage = step_context.values["select_storage"]
         listaContainers = DatabaseManager.getContainerByNameStorage(nome_storage)
         if risposta == True:     #inserire il file nella categoria scelta dal classificatore
@@ -300,7 +301,9 @@ class Upload_file_dialog(ComponentDialog):
             step_context.values["listaContainer"] = listaContainers
             listselect = []
             for x in listaContainers:
-                print("x: ",x)
+                #print("x: ",x)
+                if x == nome_container_temp:
+                    break
                 object=CardAction(
                     type=ActionTypes.im_back,
                     title =x,
@@ -415,7 +418,7 @@ class Upload_file_dialog(ComponentDialog):
             await step_context.context.send_activity("Upload del file completato...torna al menu principale")
         else:
             await step_context.context.send_activity("Sincronizzazione Database non effettuata")
-        
+        #step_context.values["skip"] =True
         return await step_context.end_dialog() #ritorna al main dialog step final step
         
 

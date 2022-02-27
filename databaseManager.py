@@ -57,7 +57,7 @@ class DatabaseManager:
                     
                     cursor.execute("INSERT INTO storage VALUES (?,?,?,?)",storage.getStorageName(),storage.getKeyStorage(), storage.getIdUserStorage(), storage.getPwd())
                 except pyodbc.IntegrityError:
-                    print("integrity error")
+                    #print("integrity error")
                     register=False
                     return register
         return register
@@ -169,7 +169,7 @@ class DatabaseManager:
                 try:
                     cursor.execute("INSERT INTO container VALUES (?,?)",container.getNameContainer(),container.getNameStorage())
                 except pyodbc.IntegrityError:
-                    print("integrity error")
+                    #print("integrity error")
                     return False
                 #row = cursor.fetchone() 
         return register
@@ -191,7 +191,7 @@ class DatabaseManager:
                     )
                 #except pyodbc.IntegrityError:
                     register=False
-                    print("integrity error contanier multiple")
+                    #print("integrity error contanier multiple")
                     return register
                 #row = cursor.fetchone() 
         return register
@@ -207,7 +207,7 @@ class DatabaseManager:
                     cursor.execute("INSERT INTO blob VALUES (?,?,?,?)", blob.getName(),blob.getNameContainer(),blob.getCrypto(),blob.getCompression())
                 except pyodbc.IntegrityError:
                     register=False
-                    print("integrity error")
+                    #print("integrity error")
                     return register
                 #row = cursor.fetchone() 
                 
@@ -278,7 +278,9 @@ class DatabaseManager:
                 cursor.execute("SELECT * FROM blob where nomeblob=?",nome)
                 row = cursor.fetchone()
                 temp=Blob()
-                print("row: ",row)
+                #print("row: ",row)
+                if row is None: 
+                    return None
                 if len(row) > 0:
                     while row:
                         temp=Blob()
@@ -319,12 +321,12 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT name FROM container where nome_storage=?",name_storage)
                 row = cursor.fetchone()
-                print("row: ",row)
+                #print("row: ",row)
                 if len(row) > 0:
                     while row:
                         listNomeContainer.append(row[0])
                         row = cursor.fetchone()
-        print("lista nome contaoner: ",listNomeContainer)  
+        #print("lista nome contaoner: ",listNomeContainer)  
         return listNomeContainer
 
     @staticmethod
@@ -366,7 +368,7 @@ class DatabaseManager:
                 try:
                     cursor.execute("DELETE * from blob where nomeblob=? AND name_container =?",nome_blob,nome_container)
                 except pyodbc.IntegrityError:
-                    print("Delete error")       
+                    #print("Delete error")       
                     return False    
                     
         return True
