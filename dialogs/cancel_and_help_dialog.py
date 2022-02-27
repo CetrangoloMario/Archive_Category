@@ -11,7 +11,8 @@ from botbuilder.schema import ActivityTypes, InputHints
 from botbuilder.core import MessageFactory
 from botbuilder.core import BotFrameworkAdapter
 from config import DefaultConfig
-
+import requests
+from databaseManager import DatabaseManager
 CONFIG = DefaultConfig()
 
 
@@ -48,7 +49,6 @@ class CancelAndHelpDialog(ComponentDialog):
 
             if text.lower() in ("cancel", "quit"):
                 await inner_dc.context.send_activity(cancel_message)
-                #funzione
                 return await inner_dc.cancel_all_dialogs()
             
 
@@ -61,3 +61,19 @@ class CancelAndHelpDialog(ComponentDialog):
                 return await inner_dc.cancel_all_dialogs()"""
 
         return None
+""""
+    @staticmethod
+    def cancellaBlobTemporaneo(iduser : str):
+        list=DatabaseManager.getListStorageByID(iduser)
+        name_storage = list[0].x.getStorageName()
+        print("nome storage: ",name_storage)
+        user = DatabaseManager.get_user(iduser)
+        RG=user.getNomeRg()
+        print("nome archivio: ",RG)
+        storagetemp = DatabaseManager.getStorageByNome(name_storage)
+        ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
+        print("account key: ",ACCOUNT_KEY)
+
+        r = requests.get(""+CONFIG.AZURE_FUNCTIONS_ENDPOINT+"?nome_storage="+name_storage+"&accountkey="+ACCOUNT_KEY+"&nomearchivio="+RG)
+        print("risposta: ",r.headers,r.status_code,r.reason)
+"""

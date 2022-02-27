@@ -94,6 +94,9 @@ class Translate_Dialog(ComponentDialog):
             connection_string =f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={name_storage};AccountKey={ACCOUNT_KEY}"
             self.blob_service_client = BlobServiceClient.from_connection_string(connection_string)
             list = DatabaseManager.getBlobByStorage(name_storage)
+            if list is None:
+                await step_context.context.send_activity("Non ci sono file da tradurre... inserisci prima il file!!")
+                return await step_context.end_dialog()
             listselect=[]
         for x in list:
             object=CardAction(
@@ -117,8 +120,8 @@ class Translate_Dialog(ComponentDialog):
     async def step_lingua(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         nome_blob, name_container = step_context.result.split("/#/")
 
-        print(nome_blob)
-        print(name_container)
+        #print(nome_blob)
+        #print(name_container)
 
         step_context.values["nome_blob"] = nome_blob
         step_context.values["name_container"] = name_container
@@ -193,9 +196,9 @@ class Translate_Dialog(ComponentDialog):
             url = self.get_blob_sas(blob_client.account_name,blob_client.credential.account_key,"translation-target-container",nome_blob)
             await step_context.context.send_activity("Questo è il documento tradotto....")
             await step_context.context.send_activity(MessageFactory.attachment(Attachment(name=nome_blob, content_type=type,content_url=url)))
-            print("key: ",blob_client.credential.account_key)
-            r = requests.get(""+CONFIG.AZURE_FUNCTIONS_ENDPOINT+"?nome_storage="+name_storage+"&container=translation-target-container&"+"blob="+nome_blob+"&accountkey="+blob_client.credential.account_key)
-            print("risposta: ",r.headers,r.status_code,r.reason)
+            #print("key: ",blob_client.credential.account_key)
+            #r = requests.get(""+CONFIG.AZURE_FUNCTIONS_ENDPOINT+"?nome_storage="+name_storage+"&container=translation-target-container&"+"blob="+nome_blob+"&accountkey="+blob_client.credential.account_key)
+            #print("risposta: ",r.headers,r.status_code,r.reason)
             source_container.delete_blob(blob=nome_blob) #cancello il blob temporaneo
             return await step_context.end_dialog()
         source_container.delete_blob(blob=nome_blob) #cancello il blob temporaneo anche in caso in cui la traduzione da errore

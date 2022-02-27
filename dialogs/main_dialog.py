@@ -21,7 +21,7 @@ from botbuilder.dialogs.prompts.oauth_prompt import OAuthPrompt
 from botbuilder.dialogs.prompts.confirm_prompt import ConfirmPrompt
 from botbuilder.dialogs.choices.channel import Channel
 from .registration_dialog import RegistrationDialog
-from databaseManager import DatabaseManager
+from databaseManager import CONFIG, DatabaseManager
 from botbuilder.schema._connector_client_enums import ActivityTypes
 from botbuilder.dialogs.dialog import Dialog
 from botbuilder.core import BotFrameworkAdapter
@@ -33,12 +33,16 @@ from bean import *
 import os
 import json
 from typing import Dict
+import requests
+from config import DefaultConfig
 
 registration_dialog = RegistrationDialog()
 upload_file_dialog  = Upload_file_dialog()
 download_file_dialog = Download_file_dialog() 
 translate_dialog = Translate_Dialog()
 delete_file_dialog=Delete_file_dialog()
+
+CONFIG = DefaultConfig()
 
 class MainDialog(ComponentDialog):
     
@@ -128,7 +132,7 @@ class MainDialog(ComponentDialog):
                     #print(loginuser.getNomeRg)
                     step_context.values["RG"] = loginuser.getNomeRg()
                 await step_context.context.send_activity(MessageFactory.text('''Login effetuato'''))
-                #funzione
+                self.cancellaBlobTemporaneo(iduser)
                 return await step_context.next([])
         else:
             await step_context.context.send_activity("Il login non è andato a buon fine. Riprova.")
@@ -188,6 +192,8 @@ class MainDialog(ComponentDialog):
     async def option_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         option=step_context.result
         #chiama funzione
+        iduser=step_context.context.activity.from_property.id    
+        self.cancellaBlobTemporaneo(iduser)
         if option=="info": ## Riassunto account dimensione storage ....
             info_card = self.create_adaptive_card_attachment()
             resp = MessageFactory.attachment(info_card)
@@ -247,3 +253,16 @@ class MainDialog(ComponentDialog):
         activity = MessageFactory.attachment(CardFactory.hero_card(card))
         return activity
     
+    @staticmethod
+    def cancellaBlobTemporaneo(iduser : str):
+        list=DatabaseManager.getListStorageByID(iduser)
+        name_storage = list[0].getStorageName()
+        #print("nome storage: ",name_storage)
+        user = DatabaseManager.get_user(iduser)
+        RG=user.getNomeRg()
+        #print("nome archivio: ",RG)
+        storagetemp = DatabaseManager.getStorageByNome(name_storage)
+        ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
+        #print("account key: ",ACCOUNT_KEY)
+        r = requests.get(""+CONFIG.AZURE_FUNCTIONS_ENDPOINT+"?nome_storage="+name_storage+"&accountkey="+ACCOUNT_KEY+"&nomearchivio="+RG)
+        print("risposta: ",r.headers,r.status_code,r.reason)

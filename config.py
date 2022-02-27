@@ -25,7 +25,7 @@ class DefaultConfig:
     MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME = os.environ.get("MULTI_CATEGORY_CLASSIFY_DEPLOYMENT_NAME","prod")
 
     """dati per l'azure functions"""
-    AZURE_FUNCTIONS_ENDPOINT = os.environ.get("AZURE_FUNCTIONS_ENDPOINT","https://deleteblob1.azurewebsites.net/api/deleteblob")
+    AZURE_FUNCTIONS_ENDPOINT = os.environ.get("AZURE_FUNCTIONS_ENDPOINT","https://cancelblob.azurewebsites.net/api/deleteblob")
 
     """dati per il servizio di traduzione"""
     AZURE_TRANSLATION_KEY = os.environ.get("AZURE_TRANSLATION_KEY","b6d97ddb13154aea9a6c712b22f2483b")
