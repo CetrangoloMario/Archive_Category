@@ -7,6 +7,7 @@ from .registration_dialog import RegistrationDialog
 from dialogs.upload_file_dialog import Upload_file_dialog
 from .download_file_dialog import Download_file_dialog
 from .translate_dialog import Translate_Dialog
+from .delete_file_dialog import Delete_file_dialog
 
 
-__all__ = [ "CancelAndHelpDialog", "MainDialog", "RegistrationDialog","Upload_file_dialog","Download_file_dialog", "Translate_Dialog"]
+__all__ = [ "CancelAndHelpDialog", "MainDialog", "RegistrationDialog","Upload_file_dialog","Download_file_dialog", "Delete_file_dialog","Translate_Dialog"]
