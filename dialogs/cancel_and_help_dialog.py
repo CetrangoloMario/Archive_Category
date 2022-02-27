@@ -48,6 +48,7 @@ class CancelAndHelpDialog(ComponentDialog):
 
             if text.lower() in ("cancel", "quit"):
                 await inner_dc.context.send_activity(cancel_message)
+                #funzione
                 return await inner_dc.cancel_all_dialogs()
             
 

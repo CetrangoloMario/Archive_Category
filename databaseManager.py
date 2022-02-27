@@ -223,7 +223,7 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM container where nome_storage=?",name_storage)
                 row = cursor.fetchone()
-                
+                if row is None: return None
                 if len(row)>0:
                     while row:
                         temp=Container()
@@ -242,6 +242,7 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM container where nome_storage=? AND name=?",name_storage,nomeContainer)
                 row = cursor.fetchone()
+                if row is None : return None
                 if len(row) > 0:
                     temp=Container()
                     temp.name_container=str(row[0])
@@ -261,6 +262,7 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM storage where name=?",nome)
                 row = cursor.fetchone()
+                if row is None : return None
                 if len(row) > 0:
                     storag=Storage()
                     storag.storage_name=str(row[0])
@@ -299,7 +301,8 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM blob where name_container=?",nome_container)
                 row = cursor.fetchone()
-            
+                if row is None: 
+                    return None
                 if len(row)>0:
                     while row:
                         temp=Blob()
@@ -321,6 +324,8 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT name FROM container where nome_storage=?",name_storage)
                 row = cursor.fetchone()
+                if row is None: 
+                    return None
                 #print("row: ",row)
                 if len(row) > 0:
                     while row:
@@ -348,6 +353,8 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT nomeblob,name_container from blob INNER JOIN container ON blob.name_container = container.name where container.nome_storage = ?",name_storage)
                 row = cursor.fetchone()
+                if row is None: 
+                    return None
                 if len(row)>0:
                     while row:
                         temp=Blob()
@@ -366,7 +373,7 @@ class DatabaseManager:
         with pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password) as conn:
             with conn.cursor() as cursor:
                 try:
-                    cursor.execute("DELETE * from blob where nomeblob=? AND name_container =?",nome_blob,nome_container)
+                    cursor.execute("DELETE from blob where nomeblob=? AND name_container =?",nome_blob,nome_container)
                 except pyodbc.IntegrityError:
                     #print("Delete error")       
                     return False    

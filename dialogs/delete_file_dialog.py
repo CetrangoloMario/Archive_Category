@@ -119,6 +119,11 @@ class Delete_file_dialog(ComponentDialog):
             )
                 
     async def option_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        if step_context.result=="reprompt-main":
+            await step_context.context.send_activity("Ritorniamo al main")
+            #step_context.values["skip"]=
+            return await step_context.end_dialog()#testare
+        
         option=step_context.result
         
         if option=="nome_file": ## Riassunto account dimensione storage ....
@@ -132,6 +137,10 @@ class Delete_file_dialog(ComponentDialog):
        
         
     async def step_insert_name_file(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        if step_context.result=="reprompt-main":
+            await step_context.context.send_activity("Ritorniamo al main")
+            #step_context.values["skip"]=
+            return await step_context.end_dialog()#testare
         
         message_text = "Inserisci nome file: \n"
         prompt_message = MessageFactory.text(message_text, message_text, InputHints.expecting_input)
@@ -153,7 +162,7 @@ class Delete_file_dialog(ComponentDialog):
 
         if blob is None:
             await step_context.context.send_activity(" File non trovato ")
-            return await step_context.reprompt_dialog()
+            return await step_context.end_dialog("reprompt-main")
         
         else:
             await step_context.context.send_activity(" File trovato un solo elemento")
@@ -164,15 +173,15 @@ class Delete_file_dialog(ComponentDialog):
                 storage=listaStorageUser[0]
                 await step_context.context.send_activity("File cancellato: ")
                 #cancellare nel db
-                if self.delete_file(blob,storage,self.name_container):
-                    DatabaseManager.deleteBlob(blob,self.name_container)
-                    return await step_context.end_dialog()
+                if self.delete_file(blob.getName(),storage,self.name_container):
+                    DatabaseManager.deleteBlob(blob.getName(),self.name_container)
+                    return await step_context.end_dialog("reprompt-main")
                 await step_context.context.send_activity(" File errore eliminazione")
-                return await step_context.reprompt_dialog()
+                return await step_context.end_dialog("reprompt-main")
                 
             
             await step_context.context.send_activity(" Archivio corrente non trovato ")
-            return await step_context.end_dialog()
+            return await step_context.end_dialog("reprompt-main")
             
       
     
@@ -182,6 +191,8 @@ class Delete_file_dialog(ComponentDialog):
         iduser=step_context.context.activity.from_property.id
 
         user= DatabaseManager.get_user(iduser)
+        if user is None:
+            return await step_context.cancel_all_dialogs()
         nome_RG=user.getNomeRg()
         #print (RG,"")
         
@@ -224,12 +235,23 @@ class Delete_file_dialog(ComponentDialog):
         
         if option=="logout": 
             await step_context.context.send_activity("Torna al menù principale")
-            return await step_context.end_dialog()
+            return await step_context.end_dialog("reprompt-main")
         
+        iduser=step_context.context.activity.from_property.id
+        list=DatabaseManager.getListStorageByID(iduser)
+        archivio=DatabaseManager.get_user(iduser).getNomeRg()
+        step_context.values["nome_archivio"]  = archivio
         lista_container=DatabaseManager.getListContainerbyStorage(option)
+        
+        if lista_container is None:
+            await step_context.context.send_activity("Torna al menù principale non trovata lista contenitori")
+            return await step_context.end_dialog("reprompt-main")
         listselect=[]
         
         for x in lista_container:
+            
+            if x.getNameContainer() == archivio+CONFIG.CONTAINER_BLOB_TEMP:
+                    break
             object=CardAction(
                 type=ActionTypes.im_back,
                 title =x.getNameContainer(),
@@ -244,7 +266,7 @@ class Delete_file_dialog(ComponentDialog):
             ))
         
         card = HeroCard(
-        text ="Ciao,seleziona lo storage. Per uscire digita quit o esci.",
+        text ="Ciao,seleziona il container. Per uscire digita quit o esci.",
         buttons = listselect)
         
         return await step_context.prompt(
@@ -261,9 +283,13 @@ class Delete_file_dialog(ComponentDialog):
         
         if option=="logout": 
             await step_context.context.send_activity("Torna al menù principale")
-            return await step_context.reprompt_dialog()
+            return await step_context.end_dialog("reprompt-main")
         
-        lista_file=DatabaseManager.get(option)
+        iduser=step_context.context.activity.from_property.id
+        lista_file=DatabaseManager.getListBlob(option)
+        if lista_file is None:
+            await step_context.context.send_activity("Torna al menù principale non sono presenti file")
+            return await step_context.end_dialog("reprompt-main")
         listselect=[]
         
         for x in lista_file:
@@ -281,7 +307,7 @@ class Delete_file_dialog(ComponentDialog):
             ))
         
         card = HeroCard(
-        text ="Ciao,seleziona lo storage. Per uscire digita quit o esci.",
+        text ="Ciao,seleziona il file. Per uscire digita quit o esci.",
         buttons = listselect)
         
         return await step_context.prompt(
@@ -296,7 +322,7 @@ class Delete_file_dialog(ComponentDialog):
         
         if option=="logout": 
             await step_context.context.send_activity("Torna al menù principale")
-            return await step_context.reprompt_dialog()
+            return await step_context.end_dialog("reprompt-main")
         
         else:
             return await step_context.next(option)

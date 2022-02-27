@@ -128,6 +128,7 @@ class MainDialog(ComponentDialog):
                     #print(loginuser.getNomeRg)
                     step_context.values["RG"] = loginuser.getNomeRg()
                 await step_context.context.send_activity(MessageFactory.text('''Login effetuato'''))
+                #funzione
                 return await step_context.next([])
         else:
             await step_context.context.send_activity("Il login non è andato a buon fine. Riprova.")
@@ -186,7 +187,7 @@ class MainDialog(ComponentDialog):
     
     async def option_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         option=step_context.result
-        
+        #chiama funzione
         if option=="info": ## Riassunto account dimensione storage ....
             info_card = self.create_adaptive_card_attachment()
             resp = MessageFactory.attachment(info_card)

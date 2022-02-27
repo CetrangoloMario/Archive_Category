@@ -164,7 +164,7 @@ class Download_file_dialog(ComponentDialog):
         blob=DatabaseManager.getBlobByName(nomeFile)#return lista (lista per il momento contiene solamente un file con i vincoli del db) o None
         if blob is None:
             await step_context.context.send_activity("File non trovati")
-            return await step_context.end_dialog("reprompt-dialog")#testare
+            return await step_context.end_dialog("reprompt-main")#testare
 
         
         iduser=step_context.context.activity.from_property.id
@@ -174,7 +174,7 @@ class Download_file_dialog(ComponentDialog):
 
         if blob is None:
             await step_context.context.send_activity(" File non trovato ")
-            return await step_context.reprompt_dialog()
+            return await step_context.end_dialog("reprompt-main")
         
         else:
             await step_context.context.send_activity(" File trovato un solo elemento")
@@ -186,7 +186,7 @@ class Download_file_dialog(ComponentDialog):
                 url, type, blob_client = self.download_file(nomeFile,storage,self.name_container,step_context.values["nome_archivio"])
                 await step_context.context.send_activity(MessageFactory.attachment(Attachment(name=nomeFile, content_type=type,content_url=url)))
                 #blob_client.delete_blob() #utilizzare un azure function per cancellare i blob temporaneo
-                return await step_context.end_dialog()
+                return await step_context.end_dialog("reprompt-main")
             
                 
             
@@ -291,14 +291,17 @@ class Download_file_dialog(ComponentDialog):
         
         iduser=step_context.context.activity.from_property.id
         list=DatabaseManager.getListStorageByID(iduser)
-        step_context.values["nome_archivio"]  = DatabaseManager.get_user(iduser).getNomeRg()
+        archivio=DatabaseManager.get_user(iduser).getNomeRg()
+        step_context.values["nome_archivio"]  = archivio
         lista_container=DatabaseManager.getListContainerbyStorage(option)
         if lista_container is None:
-            await step_context.context.send_activity("Torna al menù principale")
-            return await step_context.reprompt_dialog()
+            await step_context.context.send_activity("Torna al menù principale non sono presenti contenitori")
+            return await step_context.end_dialog("reprompt-main")
         listselect=[]
         
         for x in lista_container:
+            if x.getNameContainer() == archivio+CONFIG.CONTAINER_BLOB_TEMP:
+                    break
             object=CardAction(
                 type=ActionTypes.im_back,
                 title =x.getNameContainer(),
@@ -313,7 +316,7 @@ class Download_file_dialog(ComponentDialog):
             ))
         
         card = HeroCard(
-        text ="Ciao,seleziona lo container. Per uscire digita quit o esci.",
+        text ="Ciao,seleziona il container. Per uscire digita quit o esci.",
         buttons = listselect)
         
         return await step_context.prompt(
@@ -335,8 +338,8 @@ class Download_file_dialog(ComponentDialog):
         iduser=step_context.context.activity.from_property.id
         lista_file=DatabaseManager.getListBlob(option)
         if lista_file is None:
-            await step_context.context.send_activity("Torna al menù principale")
-            return await step_context.reprompt_dialog()
+            await step_context.context.send_activity("Torna al menù principale non sono presenti file")
+            return await step_context.end_dialog("reprompt-main")
         listselect=[]
         
         for x in lista_file:
@@ -354,7 +357,7 @@ class Download_file_dialog(ComponentDialog):
             ))
         
         card = HeroCard(
-        text ="Ciao,seleziona lo storage. Per uscire digita quit o esci.",
+        text ="Ciao,seleziona il file. Per uscire digita quit o esci.",
         buttons = listselect)
         
         return await step_context.prompt(
