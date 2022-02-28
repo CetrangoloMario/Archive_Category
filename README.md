@@ -351,24 +351,84 @@ Dopo aver addestrato il modelli, distribuito e testato inserire nel file config.
 ### Guida all'esecuzione
 Per potere utillizare il servizio si è utilizzato l'sdk. Nel seguente link https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/textanalytics/azure-ai-textanalytics/samples/sample_multi_category_classify.py c'è il codice che permette di usufruire del servizio 
 
-   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-richieste nel service lingua creato 
-AZURE_TEXT_ANALYTICS_ENDPOINT = "https://westeurope.api.cognitive.microsoft.com/")
-ed la chiave 1
-
-###file json di configurazione
-
-
-
-#servizio translate
+### Servizio translate
 
 nome che andrà nel file config endpoint
 piano tariffario Standard S1
 
-copiare in chiavi ed endpoint il campo traduzione documento che andrà a finire nel file config
-copiare key 1 
+## Prerequisiti
+Per iniziare, sono necessari:
+- Un account Azure attivo. Se non è disponibile, è possibile creare un account gratuito.
+- Una **risorsa Translator** servizio singolo (non una risorsa di Servizi cognitivi multi-servizio).
+	* Nel momento in cui si crea la risorsa inserire il piano tariffario **pay as you go**
+- Un account di archiviazione BLOB di Azure. Verranno creati contenitori nell'account di archiviazione BLOB di Azure per i file di origine e di destinazione:
+	* Contenitore di origine: Questo contenitore consente di caricare i file per la                        traduzione(obbligatorio).
+	* Contenitore di destinazione: Questo contenitore è il percorso in cui verranno archiviati i file tradotti (obbligatorio).
+
+- È anche necessario creare token di firma di accesso condiviso (SAS) per i contenitori di origine e di destinazione. e sourceUrl devono targetUrl includere un token di firma di accesso condiviso, accodato come stringa di query. Il token può essere assegnato al contenitore o a BLOB specifici.
+
+### Librerie client
+
+### Installare la libreria client
+Se non è stato fatto, installare Python e quindi installare la versione più recente della Translator client:
+
+```sh
+pip install azure-ai-translation-document
+```
+
+### Creare l'applicazione
+Creare una nuova applicazione Python nell'ambiente di sviluppo integrato o nell'editor preferito. Importare quindi le librerie seguenti.
+
+```sh
+    import os
+    from azure.core.credentials import AzureKeyCredential
+    from azure.ai.translation.document import DocumentTranslationClient
+```
+Creare variabili per la chiave di sottoscrizione della risorsa, l'endpoint personalizzato, sourceUrl e targetUrl. Per altre informazioni,  per prendere l'endpoint e chiave vedere il seguente link https://docs.microsoft.com/it-it/azure/cognitive-services/translator/document-translation/get-started-with-document-translation?tabs=csharp#custom-domain-name-and-subscription-key
+
+Inserire endpoint e chiave nel file config.py
+```sh
+    AZURE_TRANSLATION_KEY = os.environ.get("AZURE_TRANSLATION_KEY","")
+    AZURE_TRANSLATION_ENDPOINT = os.environ.get("AZURE_TRANSLATION_ENDPOINT","https://<<YOUR-ENDPOINT>>.cognitiveservices.azure.com/")
+```
+
+
+```sh
+subscriptionKey = "<your-subscription-key>"
+endpoint = "<your-custom-endpoint>"
+sourceUrl = "<your-container-sourceUrl>"
+targetUrl = "<your-container-targetUrl>"
+```
+
+### Esempio tradurre un documento
+```sh
+client = DocumentTranslationClient(endpoint, AzureKeyCredential(subscriptionKey))
+
+    poller = client.begin_translation(sourceUrl, targetUrl, "fr")
+    result = poller.result()
+
+    print("Status: {}".format(poller.status()))
+    print("Created on: {}".format(poller.details.created_on))
+    print("Last updated on: {}".format(poller.details.last_updated_on))
+    print("Total number of translations on documents: {}".format(poller.details.documents_total_count))
+
+    print("\nOf total documents...")
+    print("{} failed".format(poller.details.documents_failed_count))
+    print("{} succeeded".format(poller.details.documents_succeeded_count))
+
+    for document in result:
+        print("Document ID: {}".format(document.id))
+        print("Document status: {}".format(document.status))
+        if document.status == "Succeeded":
+            print("Source document location: {}".format(document.source_document_url))
+            print("Translated document location: {}".format(document.translated_document_url))
+            print("Translated to language: {}\n".format(document.translated_to))
+        else:
+            print("Error Code: {}, Message: {}\n".format(document.error.code, document.error.message))
+```
 
 
 
@@ -426,26 +486,99 @@ avvio rapido inizia dalla pagina SQL di Azure.
 
 Nel file databaseManager.py inserire i parametri di configurazione
 corretti per l’utilizzo del database.
-
+```sh
+    SERVERDB = 'your-server-db'
+    DATABASEDB = 'your-name-database'
+    USERNAMEDB = 'azureuser'
+    PASSWORDDB = 'your-password-db'
+    DRIVERDB= '{ODBC Driver 17 for SQL Server}'
+```
 
 
 
 ### Function App
 
-Per creare la function app per effettuare scraping da Visual Studio
-Code:
+### Configurare l'ambiente
+Prima di iniziare, verificare che siano soddisfatti i requisiti seguenti:
 
-1.  Aprire la cartella **Scraping** in Visual Studio Code
-2.  Su command palette di VS Code eseguire il comando **Azure Function:
-    Deploy to Function App…**
-3.  Seguire la procedura guidata ricordando di selezionare **HTTP
-    trigger** per l’attivazione della funzione.
-4.  Conservare l’endpoint fornito alla fine della fase di deploy ed
-    inserirlo nel file *config.py *del bot.
+1.  Un account Azure con una sottoscrizione attiva. Creare un account gratuitamente.
+2.  Azure Functions Core Tools versione 3.x.
+3.  Visual Studio Code
+4.  Estensione Funzioni di Azure per Visual Studio Code.
+inserire all'interno del variabili d'ambiente id sottoscrizione (per provarlo in locale). 
+link seguente per scaricare l'estensione https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions
 
-inserire all'interno del variabili d'ambiente id sottoscrizione (per provarlo in locale)
-	
-	
+### Creare il progetto locale
+In questa sezione si userà Visual Studio Code per creare un progetto di Funzioni di Azure locale in Python. Più avanti in questo articolo verrà pubblicato il codice della funzione in Azure.
+
+1. Selezionare l'icona di Azure nella barra attività, quindi nell'area Azure: Funzioni selezionare l'icona **Crea nuovo progetto... .**
+
+2.  Scegliere una posizione della directory per l'area di lavoro del progetto e quindi scegliere **Seleziona.** È consigliabile creare una nuova cartella o scegliere una cartella vuota come area di lavoro del progetto.
+
+3. Quando richiesto, immettere le informazioni seguenti:
+* Selezionare un linguaggio per il progetto di funzione: scegliere (Esempio python)
+* Selezionare un alias Python per creare un ambiente virtuale: Scegliere la posizione dell'interprete Python.Se la posizione non viene visualizzata, digitare il percorso completo del file binario di Python.
+* Selezionare un modello per la prima funzione del progetto: scegliere .
+* Specificare un nome di funzione: digitare .
+* Livello di autorizzazione: scegliere , che consente a chiunque di chiamare l'endpoint della funzione.
+* Selezionare la modalità di apertura del progetto: scegliere 
+4. Usando queste informazioni, Visual Studio Code genera un progetto di Funzioni di Azure con un trigger HTTP.
+
+### Pubblicare il progetto in Azure
+In questa sezione verrà creata un'app per le funzioni con le risorse correlate nella sottoscrizione di Azure e quindi verrà distribuito il codice.
+
+1. Selezionare l'icona di Azure nella barra attività, quindi nell'area Azure: Funzioni scegliere il pulsante **Deploy to function app...** (Distribuisci nell'app per le funzioni...).
+
+2. Quando richiesto, immettere le informazioni seguenti:
+* Selezionare la cartella: scegliere una cartella dall'area di lavoro o selezionarne una che contenga l'app per le funzioni.Questa opzione non verrà visualizzata se è già stata aperta un'app per le funzioni valida.
+* Selezionare la sottoscrizione: scegliere la sottoscrizione da usare.Questa opzione non è visibile se è disponibile una sola sottoscrizione
+* elezionare App per le funzioni in Azure: scegliere .(non advanced)
+* Immettere un nome univoco a livello globale per l'app per le funzioni: digitare un nome valido in un percorso URL. Il nome digitato viene convalidato per assicurarsi che sia univoco in Funzioni di Azure.
+* Selezionare un runtime: scegliere la versione di Python in esecuzione in locale. Per verificare la versione in uso, eseguire il comando python --version.
+* Selezionare una località per le nuove risorse: per ottenere prestazioni migliori, scegliere un'area nelle vicinanze.
+
+Dopo la creazione dell'app per le funzioni e dopo l'applicazione del pacchetto di distribuzione viene visualizzata una notifica. clicca **View Output** per:
+
+Prendere l'endpoint che ti servirà per inviare la richiesta http e inserire nel file config.py. in questo modo:
+
+```sh
+   AZURE_FUNCTIONS_ENDPOINT = os.environ.get("AZURE_FUNCTIONS_ENDPOINT","YOUR-ENDPOINT")
+```
+
+### CONVERTAPI
+ConvertAPI aiuta a convertire vari formati di file. Creazione di PDF e immagini da varie fonti come Word, Excel, Powerpoint, immagini, pagine Web o codici HTML grezzi. Unisci, crittografa, dividi, ripara e decrittografa file PDF e molte altre manipolazioni. Puoi integrarlo nella tua applicazione in pochi minuti e usarlo facilmente.
+
+## Installazione
+Install con pip
+```sh
+pip install --upgrade convertapi
+```
+
+## Requisiti
+Python 2.7+ o Python 3.3+
+
+## Configurazione
+Puoi ottenere il tuo segreto su https://www.convertapi.com/a bisogna registrarsi per ottenre il "segreto"
+```sh
+import convertapi
+
+convertapi.api_secret = 'your-api-secret'
+```
+
+### Esempio di conversione file
+Converti un file in un esempio PDF. Tutti i formati e le opzioni di file supportati possono essere trovati https://www.convertapi.com/
+
+```sh
+result = convertapi.convert('pdf', { 'File': '/path/to/my_file.docx' })
+
+# save to file
+result.file.save('/path/to/save/file.pdf')
+```
+
+Per ulteriori informazione visitare il sito https://www.convertapi.com/doc/python-library
+
+
+
 ## Guida all'esecuzione
 
 Il bot può essere testato in locale utilizzando Bot Framework Emulator e ngrok.
@@ -474,4 +607,3 @@ $ ./ngrok http -host-header=rewrite 3978
 3. A questo punto è possibile testare il bot utilizzando Telegram o la web chat su Azure.
 
 
-distribuisci azure: az webapp deployment source config-zip --resource-group "ArchiveCategoryBot-RG" --name "newWebappname" --src "C:\Users\manlio\Desktop\Archive_Category-main.zip"
