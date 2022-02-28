@@ -5,18 +5,17 @@ ArchiveCategoryBot
 - Manlio Santonastaso
 
 **ArchiveCategoryBot** è un bot intelligente per Telegram in grado di fornire
-un archivio sicuro dove l'utente può organizzare i vari documenti/file in categorie grazie all'apprendimento automatico
-(machine learning) di un classificatore capace di categorizzare (business,entertainment,sport,tech,politics) i vari documenti inseriti. Inoltre offre 
-la possibilità di tradurre i vari documenti, scaricare ed eliminare. 
+un archivio sicuro dove l'utente può organizzare i vari documenti/file in categorie scelte dal classificatore (business, entertainment, sport, tech e politics) oppure creare una nuova. Inoltre offre la possibilità di tradurre, scaricare ed eliminare i vari documenti. 
+
 Le funzionalità offerte dal bot sono:
 
 -   **Login e registrazione**: l’utente può registrarsi al bot
-    inserendo il nome dell'archivio 
+    inserendo il nome dell'archivio.
 -   **Upload File**: l’utente può inserire qualsiasi file, dopodichè 
     verrà categorizzato in una delle cinque categorie (business,entertainment,sport,tech,politics)
     oppure la possibilità di creare una nuova categoria.
 -   **Translate**: l'utente ha la possibilità di tradurre i documenti/file 
-    inseriti in cinque lingue (italiano,inglese,francese,tedesco e cinese)
+    inseriti in cinque lingue (italiano, inglese, francese, tedesco e cinese)
 -   **Scarica file**: l'utente ha la possibilità di scaricare i documenti/file
     inseriti tramite una ricerca per nome oppure una ricera totale passando
     dallo storage, categorie fino ad arrivare al file desiderato
