@@ -270,34 +270,44 @@ Prima di poter usare la classificazione del testo personalizzata, dovrai creare 
     
 ### Carica dati di esempio nel contenitore BLOB
 Dopo aver creato un account di archiviazione di Azure e averlo collegato alla risorsa Lingua, dovrai caricare i file di esempio nella directory radice del contenitore per questo avvio rapido. Questi file verranno successivamente utilizzati per addestrare il tuo modello.
-  1. Scarica i dati da questo link http://mlg.ucd.ie/files/datasets/bbc.zip. Estrai il file zip e          all'interno troverai 2.225 documenti dal sito web di notizie della bbc corrispondenti a storie        in cinque aree tematiche dal 2004 a 2005. Queste aree sono:
+  1. Scarica i dati da questo link http://mlg.ucd.ie/files/datasets/bbc.zip. Estrai il file zip e all'interno troverai 2.225 documenti dal sito web di notizie della bbc              corrispondenti a storie in cinque aree tematiche dal 2004 a 2005. Queste aree sono:
      - Business
      - Entertainment
      - Politics
      - Sport
      - Tech
   2. Nel portale di Azure passare all'account di archiviazione creato e selezionarlo.
-  3. Nel tuo account di archiviazione, seleziona **Contenitori** dal menu a sinistra, che si trova        sotto **Archiviazione dati** . Nella schermata visualizzata, seleziona **+ Contenitore **.            Assegna al contenitore il nome dati di esempio e lascia il livello di accesso pubblico                predefinito.
-  4. Dopo aver creato il tuo contenitore, fai clic su di esso. Quindi seleziona il pulsante Carica        per selezionare i file .txt scaricati in precedenza.
+  3. Nel tuo account di archiviazione, seleziona **Contenitori** dal menu a sinistra, che si trova sotto **Archiviazione dati** . Nella schermata visualizzata, seleziona **+          Contenitore **. Assegna al contenitore il nome dati di esempio e lascia il livello di accesso pubblico predefinito.
+  4. Dopo aver creato il tuo contenitore, fai clic su di esso. Quindi seleziona il pulsante Carica per selezionare i file .txt scaricati in precedenza.
+  
+  
 ### Crea un progetto di classificazione personalizzato
-  1. Accedi a Language Studio . Apparirà una finestra che ti consentirà di selezionare il tuo              abbonamento e la risorsa Lingua. Seleziona la risorsa che hai creato nel passaggio precedente.
-  2. Nella sezione **Classifica testo** di Language Studio, seleziona la **classificazione del testo      personalizzata** dai servizi disponibili e selezionala.
-  3. Seleziona **Crea nuovo progetto** (nome da inserire nel file config.py) dal menu in alto nella pagina dei tuoi progetti. La creazione      di un progetto ti consentirà di        etichettare i dati, addestrare, valutare, migliorare e distribuire i tuoi modelli.
-  4. Se hai creato la tua risorsa utilizzando i passaggi precedenti, il passaggio di **archiviazione 	  Connect** sarà già completato. In caso contrario, devi assegnare ruoli per il tuo account di 	        archiviazione prima di connetterlo alla tua risorsa.
-        - La tua risorsa ha il ruolo di **proprietario (owner) o collaboratore (contributor)**                 nell'account di archiviazione
-        - La risorsa ha il ruolo di **proprietario dei dati del BLOB (Storage blob data owner) di               archiviazione o collaboratore (Storage blob data contributor)** dei dati del BLOB di                 archiviazione nell'account di archiviazione.
+  1. Accedi a Language Studio . Apparirà una finestra che ti consentirà di selezionare il tuo abbonamento e la risorsa Lingua. Seleziona la risorsa che hai creato nel passaggio      precedente.
+  2. Nella sezione **Classifica testo** di Language Studio, seleziona la **classificazione del testo personalizzata** dai servizi disponibili e selezionala.
+ 
+  3. Seleziona **Crea nuovo progetto** (nome da inserire nel file config.py) dal menu in alto nella pagina dei tuoi progetti. La creazione  di un progetto ti consentirà di            etichettare i dati, addestrare, valutare, migliorare e distribuire i tuoi modelli.
+  4. Se hai creato la tua risorsa utilizzando i passaggi precedenti, il passaggio di **archiviazione Connect** sarà già completato. In caso contrario, devi assegnare ruoli per        il tuo account di archiviazione prima di connetterlo alla tua risorsa.
+ 
+        - La tua risorsa ha il ruolo di **proprietario (owner) o collaboratore (contributor)** nell'account di archiviazione
+        - La risorsa ha il ruolo di **proprietario dei dati del BLOB (Storage blob data owner) di archiviazione o collaboratore (Storage blob data contributor)** dei dati del             BLOB di archiviazione nell'account di archiviazione.
         - La tua risorsa ha il ruolo di **lettore (Reader)** nell'account di archiviazione.
-      Per impostare i ruoli appropriati nel tuo account di archiviazione:
-	- Vai alla pagina del tuo account di archiviazione nel portale di Azure.
-	- Seleziona **Controllo accessi (IAM)** nel menu di navigazione a sinistra.
-	- Seleziona **Aggiungi per aggiungere assegnazioni** di ruolo e scegli il ruolo appropriato             per la tua risorsa Lingua.
-	- Seleziona **Identità gestita** in Assegna accesso a.
-	- Seleziona **Membri** e trova la tua risorsa. Nella finestra che appare, seleziona il tuo             abbonamento e **Lingua** come identità gestita. È possibile cercare i nomi utente nel campo           Seleziona. Ripetere l'operazione per tutti i ruoli.
-   5. Seleziona il tipo di progetto. Per questo avvio rapido, creeremo un progetto di classificazione       multietichetta in cui è possibile assegnare più classi allo stesso file. Quindi fare clic su         Avanti . Ulteriori informazioni sui tipi di progetto
-   6. Inserisci le informazioni sul progetto, inclusi un nome, una descrizione e la lingua dei file         nel tuo progetto. Non potrai modificare il nome del tuo progetto in un secondo momento.
-      - Consiglio: Il tuo set di dati non deve essere interamente nella stessa lingua. Puoi avere più         file, ognuno con diverse lingue supportate. Se il tuo set di dati contiene file di lingue             diverse o se prevedi lingue diverse durante il runtime, seleziona abilita set di dati                 multilingue quando inserisci le informazioni di base per il tuo progetto.
-   7. Seleziona il contenitore in cui hai caricato i tuoi dati. Quando ti viene chiesto se i tuoi           file sono già contrassegnati da classi, seleziona Sì e scegli il file disponibile. Quindi fare       clic su **Avanti** .
-   8. Rivedi i dati inseriti e seleziona **Crea progetto*.
+        
+Per impostare i ruoli appropriati nel tuo account di archiviazione:
+- Vai alla pagina del tuo account di archiviazione nel portale di Azure.
+- Seleziona **Controllo accessi (IAM)** nel menu di navigazione a sinistra.
+- Seleziona **Aggiungi per aggiungere assegnazioni** di ruolo e scegli il ruolo appropriato per la tua risorsa Lingua.
+- Seleziona **Identità gestita** in Assegna accesso a.
+- Seleziona **Membri** e trova la tua risorsa. Nella finestra che appare, seleziona il tuo abbonamento e **Lingua** come identità gestita. È possibile cercare i nomi               utente nel campo. Seleziona. Ripetere l'operazione per tutti i ruoli.
+
+	
+ 5. Seleziona il tipo di progetto. Per questo avvio rapido, creeremo un progetto di classificazione multietichetta in cui è possibile assegnare più classi allo stesso file.         Quindi fare clic su Avanti . Ulteriori informazioni sui tipi di progetto
+ 
+  
+ 6. Inserisci le informazioni sul progetto, inclusi un nome, una descrizione e la lingua dei file nel tuo progetto. Non potrai modificare il nome del tuo progetto in un             secondo momento.
+      - Consiglio: Il tuo set di dati non deve essere interamente nella stessa lingua. Puoi avere più file, ognuno con diverse lingue supportate. Se il tuo set di dati                   contiene file di lingue diverse o se prevedi lingue diverse durante il runtime, seleziona abilita set di dati multilingue quando inserisci le informazioni di base per il         tuo progetto.
+      
+ 7. Seleziona il contenitore in cui hai caricato i tuoi dati. Quando ti viene chiesto se i tuoi file sono già contrassegnati da classi, seleziona Sì e scegli il file                 disponibile. Quindi fare clic su **Avanti** .
+   9. Rivedi i dati inseriti e seleziona **Crea progetto**.
   
 ### Allena il tuo modello
 In genere, dopo aver creato un progetto, importare i dati e iniziare a contrassegnare le entità al suo interno per addestrare il modello di classificazione. Per questo avvio rapido, utilizzerai il file di dati con tag di esempio scaricato in precedenza e archiviato nell'account di archiviazione di Azure.
@@ -333,10 +343,12 @@ Dopo aver distribuito il modello, puoi iniziare a usarlo per la classificazione 
  
  Per ulteriori informazioni visitare il link seguente: https://docs.microsoft.com/en-us/azure/cognitive-services/language-service/custom-classification/quickstart?pivots=language-studio
  
-Dopo aver addestrato il modelli, distribuito e testato inserire nel file config.py endpoint,        chiave, nome del progetto e nome del deploy:
-     - Vai alla pagina della panoramica delle risorse nel portale di azure
-     - Dal menu sul lato sinistro, seleziona **Chiavi ed Endpoint** . Utilizzerai l'endpoint e la            chiave per le richieste API
+Dopo aver addestrato il modelli, distribuito e testato inserire nel file config.py endpoint, chiave, nome del progetto e nome del deploy.
+1. Vai alla pagina della panoramica delle risorse nel portale di azure
+2. Dal menu sul lato sinistro, seleziona **Chiavi ed Endpoint** . Utilizzerai l'endpoint e la  chiave per le richieste API
 
+     
+### Guida all'esecuzione
 Per potere utillizare il servizio si è utilizzato l'sdk. Nel seguente link https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/textanalytics/azure-ai-textanalytics/samples/sample_multi_category_classify.py c'è il codice che permette di usufruire del servizio 
 
    
