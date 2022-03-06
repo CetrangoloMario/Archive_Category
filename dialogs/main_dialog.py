@@ -132,7 +132,7 @@ class MainDialog(ComponentDialog):
                     #print(loginuser.getNomeRg)
                     step_context.values["RG"] = loginuser.getNomeRg()
                 await step_context.context.send_activity(MessageFactory.text('''Login effetuato'''))
-                self.cancellaBlobTemporaneo(iduser)
+                #self.cancellaBlobTemporaneo(iduser)
                 return await step_context.next([])
         else:
             await step_context.context.send_activity("Il login non è andato a buon fine. Riprova.")
@@ -262,7 +262,8 @@ class MainDialog(ComponentDialog):
         RG=user.getNomeRg()
         #print("nome archivio: ",RG)
         storagetemp = DatabaseManager.getStorageByNome(name_storage)
-        ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
-        #print("account key: ",ACCOUNT_KEY)
-        r = requests.get(""+CONFIG.AZURE_FUNCTIONS_ENDPOINT+"?nome_storage="+name_storage+"&accountkey="+ACCOUNT_KEY+"&nomearchivio="+RG)
-        print("risposta: ",r.headers,r.status_code,r.reason)
+        if storagetemp is not None:
+            ACCOUNT_KEY = storagetemp.getKeyStorageDecript(storagetemp.getKeyStorage())
+             #print("account key: ",ACCOUNT_KEY)
+            r = requests.get(""+CONFIG.AZURE_FUNCTIONS_ENDPOINT+"?nome_storage="+name_storage+"&accountkey="+ACCOUNT_KEY+"&nomearchivio="+RG)
+            print("risposta: ",r.headers,r.status_code,r.reason)
